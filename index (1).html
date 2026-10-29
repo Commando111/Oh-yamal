@@ -1,0 +1,1364 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>أوه يامال</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Reem+Kufi:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one 1600x900 stage scaled to fit (TV), ships in a ring around the diving spot; phones (#p) get their own ship and a full-screen underwater view. */
+:root {
+  color-scheme: dark;
+  --night: #0b1d2e; --deep: #06131f; --sea: #1f6684; --foam: #dff3f5; --pearl: #f4efe6;
+  --gold: #e3b04b; --wood: #6b3f22; --wood2: #3e2414;
+  --display: 'Reem Kufi', 'Cairo', system-ui, sans-serif; --body: 'Cairo', system-ui, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--night); color: var(--pearl); font-family: var(--body); overflow: hidden; direction: rtl;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0; }
+button { font-family: var(--body); cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+/* ───────── host stage ───────── */
+#host { position: relative; width: 100%; height: 100%; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; overflow: hidden; border-radius: 10px; }
+.scene { position: absolute; inset: 0; }
+.scene svg.bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.wave { position: absolute; left: 0; width: 3400px; pointer-events: none; will-change: transform; }
+.wave svg { width: 100%; height: 100%; display: block; }
+
+/* lobby */
+#title { position: absolute; top: 34px; left: 0; right: 0; text-align: center; font-family: var(--display); font-size: 156px; line-height: 1.1; color: #f7d27a;
+  text-shadow: 0 6px 0 #6b3a14, 0 14px 40px rgba(0,0,0,.45); margin: 0; letter-spacing: 2px; }
+#qrCard { position: absolute; left: 110px; top: 300px; width: 330px; height: 330px; background: #fffaf0; border-radius: 22px; padding: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.4), inset 0 0 0 4px var(--wood); }
+#qrCard svg { width: 100%; height: 100%; display: block; }
+#slots { position: absolute; left: 520px; top: 300px; width: 980px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.slot { height: 150px; border-radius: 20px; background: rgba(6, 19, 31, .8); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px solid rgba(244,239,230,.12); }
+.slot svg { width: 92px; height: 78px; }
+.slot b { font-size: 34px; font-weight: 800; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slot.empty { opacity: .45; border-style: dashed; }
+#startBtn { position: absolute; left: 50%; transform: translateX(-50%); top: 700px; width: 150px; height: 150px; border-radius: 50%; border: 6px solid #f7d27a; background: radial-gradient(circle at 40% 35%, #d8462f, #8f1f14); color: #fff; font-size: 64px; box-shadow: 0 10px 0 #5d130c, 0 20px 40px rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding-left: 12px; }
+#startBtn:active { transform: translateX(-50%) translateY(6px); box-shadow: 0 4px 0 #5d130c; }
+#tapSound { position: absolute; left: 50%; top: 470px; width: 170px; height: 170px; margin-left: -85px; border-radius: 50%; border: 6px solid #f7d27a; background: rgba(6,19,31,.85); font-size: 80px; z-index: 30; animation: tap 1s ease-in-out infinite alternate; }
+@keyframes tap { to { transform: scale(1.1); box-shadow: 0 0 0 18px rgba(247,210,122,.25); } }
+#roomCode { position: absolute; left: 110px; top: 640px; width: 330px; text-align: center; font: 900 76px var(--body); letter-spacing: 12px; color: #f7d27a; text-shadow: 0 4px 0 #6b3a14; direction: ltr; }
+#lobbyIcons { position: absolute; left: 470px; top: 790px; display: flex; gap: 14px; font-size: 40px; }
+
+/* sky by time of day */
+.sky { position: absolute; left: 0; top: 0; width: 100%; height: 250px; opacity: 0; transition: opacity 4.5s ease; }
+.sky.on { opacity: 1; }
+#sun { position: absolute; width: 230px; height: 230px; margin: -115px 0 0 -115px; border-radius: 50%; background: radial-gradient(circle, #fff8dc 0 22%, rgba(255,220,130,.85) 30%, rgba(255,190,100,0) 68%); transition: left 5s ease-in-out, top 5s ease-in-out, opacity 4s; }
+#moon { position: absolute; left: 1230px; top: 90px; width: 70px; height: 70px; border-radius: 50%; box-shadow: -16px 8px 0 0 #f4ecd2; opacity: 0; transition: opacity 4s; }
+#stars { position: absolute; inset: 0 0 auto 0; height: 240px; opacity: 0; transition: opacity 4s; }
+#glow { position: absolute; left: 700px; top: 150px; width: 1000px; height: 200px; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,170,110,.75), rgba(255,140,90,0) 70%); opacity: 0; transition: opacity 4s; }
+#sea { position: absolute; left: 0; top: 236px; width: 100%; height: 664px; background: linear-gradient(#3a86a4, #22708f 35%, #0f4560); }
+.tint { position: absolute; inset: 0; pointer-events: none; transition: opacity 4.5s ease; opacity: 0; z-index: 1500; }
+#tintDark { background: #040a1a; }
+#tintWarm { background: #ff8a3c; mix-blend-mode: multiply; }
+
+/* the diving spot in the middle of the ring */
+#spot { position: absolute; left: 800px; top: 505px; width: 0; height: 0; z-index: 505; }
+#spot i { position: absolute; left: -150px; top: -34px; width: 300px; height: 68px; border-radius: 50%; border: 3px solid rgba(223,243,245,.35); animation: spot 3.6s ease-out infinite; }
+#spot i:nth-child(2) { animation-delay: -1.2s; } #spot i:nth-child(3) { animation-delay: -2.4s; }
+@keyframes spot { from { transform: scale(.25); opacity: .9; } to { transform: scale(1.2); opacity: 0; } }
+#spot.open i { border-color: rgba(255,236,170,.65); }
+
+.ship { position: absolute; width: 460px; height: 330px; transform-origin: 50% 91%; transition: transform 3s ease-in-out, opacity 1s; }
+.ship .rock { position: absolute; inset: 0; animation: rock 3.4s ease-in-out infinite alternate; transform-origin: 50% 90%; }
+@keyframes rock { from { transform: rotate(-1.3deg) translateY(2px); } to { transform: rotate(1.3deg) translateY(-5px); } }
+.ship .flip { position: absolute; inset: 0; }
+.ship svg.layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.nameTag { position: absolute; left: 0; right: 0; top: 232px; text-align: center; font: 900 36px var(--body); color: #f6ead2; -webkit-text-stroke: 5px #1d0f06; paint-order: stroke fill; pointer-events: none; }
+.dv { position: absolute; top: 112px; width: 46px; height: 100px; transition: opacity .3s; }
+.dv svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.dv.gone { opacity: 0; }
+.dv.climb { animation: climb 1.1s ease-out; }
+@keyframes climb { from { transform: translateY(70px); opacity: 0; } to { transform: none; opacity: 1; } }
+.flyer { position: absolute; z-index: 1400; pointer-events: none; transform-origin: 50% 50%; }
+.flyer svg { width: 100%; height: 100%; display: block; }
+.splash { position: absolute; width: 10px; height: 10px; pointer-events: none; z-index: 1300; }
+.splash i { position: absolute; left: -60px; top: -16px; width: 120px; height: 32px; border: 5px solid var(--foam); border-radius: 50%; animation: ring 1.5s ease-out forwards; }
+.splash i:nth-child(2) { animation-delay: .25s; opacity: 0; }
+.splash b { position: absolute; width: 10px; height: 15px; border-radius: 50%; background: var(--foam); animation: drop 1.1s ease-out forwards; }
+@keyframes ring { from { transform: scale(.2); opacity: 1; } to { transform: scale(2.3); opacity: 0; } }
+@keyframes drop { 0% { transform: translate(0, 0); opacity: 1; } 50% { transform: translate(var(--x), -110px); } 100% { transform: translate(calc(var(--x) * 1.6), 20px); opacity: 0; } }
+.ship.sink { transform: var(--base) translateY(330px) rotate(14deg) !important; opacity: 0; transition: transform 4.5s ease-in, opacity 1.5s 3.3s; }
+.ship.sink .rock { animation: wobble .5s infinite alternate; }
+@keyframes wobble { from { transform: rotate(-4deg); } to { transform: rotate(5deg); } }
+
+#hud { position: absolute; top: 18px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 30px; z-index: 1600; pointer-events: none; }
+#buoys { display: flex; gap: 16px; background: rgba(6,19,31,.55); padding: 12px 22px; border-radius: 40px; }
+.buoy { width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #c9c1b2 60%, #8c8577); opacity: .35; transition: all .4s; }
+.buoy.done { opacity: .15; transform: scale(.75); }
+.buoy.now { opacity: 1; transform: scale(1.35); box-shadow: 0 0 0 4px var(--gold), 0 0 24px 6px rgba(227,176,75,.7); }
+#timer { width: 116px; height: 116px; position: relative; }
+#timer svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#timer b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 46px; font-weight: 900; font-variant-numeric: tabular-nums; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+#timer.hurry b { color: #ffb4a6; animation: beat .5s infinite alternate; }
+@keyframes beat { to { transform: scale(1.12); } }
+
+/* end */
+#dock { position: absolute; left: 0; top: 0; width: 560px; height: 900px; transform: translateX(-620px); transition: transform 2.4s cubic-bezier(.2,.8,.3,1); z-index: 600; }
+#dock.in { transform: none; }
+.flyPearl { position: absolute; width: 34px; height: 34px; z-index: 1450; transition: left 1.3s cubic-bezier(.3,.6,.4,1), top 1.3s cubic-bezier(.3,-.4,.4,1), opacity .3s; }
+#results { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 14px; z-index: 1700; animation: up .6s ease-out; }
+@keyframes up { from { transform: translate(-50%, 60px); opacity: 0; } }
+.res { min-width: 190px; background: rgba(6,19,31,.88); border-radius: 18px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; border: 2px solid rgba(244,239,230,.15); }
+.res.win { border-color: var(--gold); box-shadow: 0 0 24px rgba(227,176,75,.55); }
+.res .sw { width: 18px; height: 18px; border-radius: 50%; flex: 0 0 18px; }
+.res b { font-size: 24px; font-weight: 800; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.res span { display: flex; align-items: center; gap: 6px; font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; direction: ltr; }
+.res span svg { width: 26px; height: 26px; }
+#againBtn { position: absolute; right: 40px; top: 40px; z-index: 1750; width: 110px; height: 110px; border-radius: 50%; border: 5px solid #f7d27a; background: #1f6684; color: #fff; font-size: 58px; box-shadow: 0 8px 0 #0d3346; }
+
+/* host-local seat controls (outside the stage so they keep a usable size) */
+#localCtl { position: fixed; z-index: 90; right: max(16px, calc(env(safe-area-inset-right, 0px) + 12px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 10px; }
+#localJoin { display: flex; gap: 8px; background: rgba(6,19,31,.85); padding: 8px; border-radius: 18px; }
+#localJoin input { width: 150px; font: 800 20px var(--body); padding: 8px 12px; border-radius: 12px; border: 2px solid #3a6a82; background: #fffaf0; color: #1d1209; }
+.iconBtn { width: 56px; height: 56px; border-radius: 14px; border: 0; background: var(--gold); color: #2b1a0e; font-size: 30px; display: flex; align-items: center; justify-content: center; }
+.diveBtn { width: 112px; height: 112px; border-radius: 50%; border: 5px solid var(--foam); background: radial-gradient(circle at 40% 35%, #2f8fb5, #0d4a66); box-shadow: 0 8px 0 #06263a, 0 14px 30px rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 0; }
+.diveBtn svg { width: 50px; height: 100px; }
+.diveBtn:active { transform: translateY(5px); box-shadow: 0 3px 0 #06263a; }
+.diveBtn:disabled { filter: grayscale(.9) brightness(.6); cursor: not-allowed; }
+.diveBtn.ready { animation: ready 1s infinite alternate; }
+@keyframes ready { to { box-shadow: 0 8px 0 #06263a, 0 0 0 10px rgba(223,243,245,.25); } }
+#localUnder { position: fixed; z-index: 95; inset: 0; overflow: hidden; background: #021320; }
+#soundBtn { position: fixed; z-index: 91; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px)); width: 52px; height: 52px; border-radius: 50%; border: 0; background: rgba(6,19,31,.75); color: #fff; font-size: 26px; }
+#soundBtn.off { animation: ready 1s infinite alternate; }
+
+/* ───────── underwater ───────── */
+.uw { position: relative; width: 100%; height: 100%; overflow: hidden; background: linear-gradient(#11638a, #063049 55%, #021320); }
+.uw svg.uwbg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.uw .ray { animation: ray 6s ease-in-out infinite alternate; transform-origin: 50% 0; }
+@keyframes ray { from { opacity: .08; transform: skewX(-6deg); } to { opacity: .22; transform: skewX(6deg); } }
+.uw .bub { position: absolute; bottom: -20px; border-radius: 50%; border: 2px solid rgba(223,243,245,.7); animation: bub linear infinite; }
+@keyframes bub { to { transform: translateY(-120vh) translateX(20px); } }
+.uw .ring { position: absolute; top: 4%; left: 50%; transform: translateX(-50%); height: 15%; aspect-ratio: 1; z-index: 5; }
+.uw .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.uw .oyster { position: absolute; width: 19%; max-width: 170px; transform: translateX(-50%); z-index: 2; }
+.uw .oyster.taken circle { display: none; }
+.uw .glow { animation: glow 1.4s ease-in-out infinite alternate; transform-origin: 200px 118px; }
+@keyframes glow { to { transform: scale(1.18); opacity: .7; } }
+.uw .uwd { position: absolute; width: 0; height: 24%; z-index: 3; }
+.uw .uwd svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.uw .uwd .sw { position: absolute; left: 0; top: 0; height: 100%; width: auto; aspect-ratio: 46 / 100; transform: translateX(-50%) rotate(180deg); }
+.uw .uwd.float .sw { animation: float 2.2s ease-in-out infinite alternate; }
+@media (max-aspect-ratio: 3/4) { .uw .uwd { height: 16%; translate: 0 50%; } }
+@keyframes float { from { transform: translateX(-50%) rotate(172deg); } to { transform: translateX(-50%) translateY(-6px) rotate(188deg); } }
+.uw .uwd.me::after { content: ''; position: absolute; left: 0; top: -9%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #fff7dd; box-shadow: 0 0 12px 4px rgba(255,240,200,.8); }
+.uw .shark { position: absolute; height: 22%; aspect-ratio: 340 / 110; margin-top: -4%; z-index: 4; }
+.uw .shark svg { width: 100%; height: 100%; display: block; }
+.uw .uwdark { position: absolute; inset: 0; background: #020814; pointer-events: none; z-index: 6; }
+.uw .gain { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4%; padding: 10%; z-index: 8; }
+.uw .gain svg { width: 22%; aspect-ratio: 1; animation: rise .8s cubic-bezier(.2,1.5,.4,1) backwards; }
+@keyframes rise { from { transform: translateY(160px) scale(.3); opacity: 0; } }
+.uw .gainN { position: absolute; bottom: 8%; left: 0; right: 0; text-align: center; font-size: clamp(30px, 12vw, 64px); font-weight: 900; color: #fff7dd; text-shadow: 0 0 20px rgba(255,240,200,.8); direction: ltr; z-index: 9; }
+
+/* ───────── phone ───────── */
+#phone { height: 100%; display: flex; flex-direction: column; max-width: 520px; margin: 0 auto; padding-block: 12px 18px; }
+#pJoin { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+#pJoin h1 { font-family: var(--display); color: #f7d27a; font-size: clamp(54px, 18vw, 90px); margin: 0; text-shadow: 0 4px 0 #6b3a14; }
+#pJoin .row { display: flex; gap: 10px; width: 100%; max-width: 360px; }
+#pCodeIn { text-transform: uppercase; letter-spacing: 10px; direction: ltr; }
+#pCodeIn.bad { border-color: #c8463a; animation: shake .4s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+#pJoin input { flex: 1; min-width: 0; font: 800 26px var(--body); padding: 12px 16px; border-radius: 16px; border: 3px solid #3a6a82; background: #fffaf0; color: #1d1209; text-align: center; }
+#pJoin .iconBtn { width: 66px; height: 66px; font-size: 36px; border-radius: 16px; }
+#pGame { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; min-height: 0; }
+#pTop { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
+#pBuoys { display: flex; gap: 7px; flex-wrap: wrap; }
+#pBuoys .buoy { width: 22px; height: 22px; }
+#pTimer { width: 64px; height: 64px; position: relative; flex: 0 0 64px; }
+#pTimer svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#pTimer b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
+#pShip { width: 100%; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; border-radius: 22px; overflow: hidden; position: relative; transition: background 3s; }
+#pShip svg { width: 100%; max-height: 100%; }
+#pShip .rock { animation: rock 3.4s ease-in-out infinite alternate; transform-origin: 50% 85%; }
+#pStats { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 6px; }
+#pDivers { display: flex; gap: 6px; }
+#pDivers svg { width: 26px; height: 56px; }
+#pDivers svg.lost { opacity: .18; }
+#pPearls { display: flex; align-items: center; gap: 8px; font-size: 40px; font-weight: 900; font-variant-numeric: tabular-nums; direction: ltr; }
+#pPearls svg { width: 38px; height: 38px; }
+#pDive { margin-top: 4px; }
+#pUnder { position: fixed; inset: 0; z-index: 50; }
+#pEnd { flex: 1; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
+#pEnd .scene2 { position: relative; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; border-radius: 22px; overflow: hidden; background: linear-gradient(#0a1428, #14243e 40%, #164660 41%, #0b2638); }
+#pEnd .resList { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+#pEnd .res { min-width: 0; }
+#pEnd .res b { max-width: none; }
+.connDot { position: fixed; z-index: 92; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(16px, calc(env(safe-area-inset-right, 0px) + 12px)); font-size: 22px; opacity: .8; }
+
+#sb { position: fixed; inset: 0; z-index: 200; background: rgba(2,8,16,.7); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.sbCard { width: min(460px, 100%); max-height: 100%; overflow: auto; background: #0e2a3d; border: 2px solid #3a6a82; border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+.sbHead { display: flex; justify-content: space-between; align-items: center; font-size: 22px; }
+.sbNote { margin: 0 0 4px; font-size: 14px; opacity: .8; }
+.sbRow { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.05); border-radius: 14px; padding: 8px 10px; }
+.sbRow b { flex: 1; font-size: 17px; }
+.sbRow.off { opacity: .55; }
+.sbI { font-size: 24px; width: 30px; text-align: center; }
+.sbPlay, .sbPick, .sbX { width: 44px; height: 44px; border-radius: 12px; border: 0; font-size: 20px; font-weight: 900; }
+.sbPlay { background: var(--gold); color: #2b1a0e; }
+.sbPick { background: transparent; border: 2px solid #3a6a82; color: #7fa9bd; }
+.sbPick.on { background: #2f8a4f; border-color: #2f8a4f; color: #fff; }
+.sbX { background: transparent; color: #fff; }
+.sbBtn { font-size: 34px; background: rgba(6,19,31,.8); border: 0; border-radius: 16px; width: 64px; height: 64px; color: #fff; }
+#pShip.sunk svg { animation: psink 4.5s ease-in forwards; }
+@keyframes psink { to { transform: translateY(60%) rotate(14deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .2s !important; } }
+</style>
+</head>
+<body>
+
+<div id="host" hidden><div id="stage"></div></div>
+<div id="phone" hidden></div>
+
+<script>
+// Compact QR Code generator (byte mode, error correction level M, versions 1–10).
+// Usage: QR.matrix(text) -> 2D array of booleans; QR.svg(text, color, bg) -> SVG string.
+(function (root) {
+  const ECC_LEN = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26];
+  const BLOCKS = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5];
+
+  function rawModules(ver) {
+    let r = (16 * ver + 128) * ver + 64;
+    if (ver >= 2) {
+      const n = Math.floor(ver / 7) + 2;
+      r -= (25 * n - 10) * n - 55;
+      if (ver >= 7) r -= 36;
+    }
+    return r;
+  }
+  const dataCodewords = (v) => Math.floor(rawModules(v) / 8) - ECC_LEN[v] * BLOCKS[v];
+
+  function gfMul(x, y) {
+    let z = 0;
+    for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11d); z ^= ((y >>> i) & 1) * x; }
+    return z & 0xff;
+  }
+  function rsDivisor(deg) {
+    const r = new Array(deg).fill(0); r[deg - 1] = 1;
+    let root = 1;
+    for (let i = 0; i < deg; i++) {
+      for (let j = 0; j < r.length; j++) { r[j] = gfMul(r[j], root); if (j + 1 < r.length) r[j] ^= r[j + 1]; }
+      root = gfMul(root, 2);
+    }
+    return r;
+  }
+  function rsRemainder(data, div) {
+    const r = div.map(() => 0);
+    for (const b of data) {
+      const f = b ^ r.shift(); r.push(0);
+      div.forEach((c, i) => { r[i] ^= gfMul(c, f); });
+    }
+    return r;
+  }
+
+  function encode(text) {
+    const bytes = Array.from(new TextEncoder().encode(text));
+    let ver = 1;
+    for (; ver <= 10; ver++) {
+      const cbits = ver < 10 ? 8 : 16;
+      if (4 + cbits + bytes.length * 8 <= dataCodewords(ver) * 8) break;
+    }
+    if (ver > 10) throw new Error('QR text too long');
+    const cap = dataCodewords(ver) * 8;
+    const bits = [];
+    const put = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+    put(4, 4); put(bytes.length, ver < 10 ? 8 : 16);
+    bytes.forEach((b) => put(b, 8));
+    put(0, Math.min(4, cap - bits.length));
+    while (bits.length % 8) bits.push(0);
+    for (let pad = 0xec; bits.length < cap; pad ^= 0xec ^ 0x11) put(pad, 8);
+    const data = [];
+    for (let i = 0; i < bits.length; i += 8) data.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+
+    // split into blocks, add ECC, interleave
+    const nb = BLOCKS[ver], el = ECC_LEN[ver], raw = Math.floor(rawModules(ver) / 8);
+    const nShort = nb - (raw % nb), shortLen = Math.floor(raw / nb);
+    const div = rsDivisor(el), blocks = [];
+    for (let i = 0, k = 0; i < nb; i++) {
+      const dat = data.slice(k, k + shortLen - el + (i < nShort ? 0 : 1));
+      k += dat.length;
+      const ecc = rsRemainder(dat, div);
+      if (i < nShort) dat.push(0);
+      blocks.push(dat.concat(ecc));
+    }
+    const out = [];
+    for (let i = 0; i < blocks[0].length; i++) {
+      blocks.forEach((b, j) => { if (i !== shortLen - el || j >= nShort) out.push(b[i]); });
+    }
+    return { ver, codewords: out };
+  }
+
+  function matrix(text) {
+    const { ver, codewords } = encode(text);
+    const size = ver * 4 + 17;
+    const mod = Array.from({ length: size }, () => new Array(size).fill(false));
+    const fn = Array.from({ length: size }, () => new Array(size).fill(false));
+    const setF = (x, y, d) => { mod[y][x] = d; fn[y][x] = true; };
+
+    for (let i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+    const finder = (x, y) => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const d = Math.max(Math.abs(dx), Math.abs(dy)), xx = x + dx, yy = y + dy;
+        if (xx >= 0 && xx < size && yy >= 0 && yy < size) setF(xx, yy, d !== 2 && d !== 4);
+      }
+    };
+    finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+
+    if (ver > 1) {
+      const n = Math.floor(ver / 7) + 2;
+      const step = Math.ceil((ver * 4 + 4) / (n * 2 - 2)) * 2;
+      const pos = [6];
+      for (let p = size - 7; pos.length < n; p -= step) pos.splice(1, 0, p);
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+        if ((i === 0 && j === 0) || (i === 0 && j === n - 1) || (i === n - 1 && j === 0)) continue;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+          setF(pos[i] + dx, pos[j] + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+      }
+    }
+
+    const drawFormat = (mask) => {
+      const d = (0 << 3) | mask; // ECC level M = 0b00
+      let r = d;
+      for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+      const b = ((d << 10) | r) ^ 0x5412;
+      const bit = (i) => ((b >>> i) & 1) !== 0;
+      for (let i = 0; i <= 5; i++) setF(8, i, bit(i));
+      setF(8, 7, bit(6)); setF(8, 8, bit(7)); setF(7, 8, bit(8));
+      for (let i = 9; i < 15; i++) setF(14 - i, 8, bit(i));
+      for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, bit(i));
+      for (let i = 8; i < 15; i++) setF(8, size - 15 + i, bit(i));
+      setF(8, size - 8, true);
+    };
+    drawFormat(0);
+
+    if (ver >= 7) {
+      let r = ver;
+      for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1f25);
+      const b = (ver << 12) | r;
+      for (let i = 0; i < 18; i++) {
+        const bt = ((b >>> i) & 1) !== 0, a = size - 11 + (i % 3), c = Math.floor(i / 3);
+        setF(a, c, bt); setF(c, a, bt);
+      }
+    }
+
+    let i = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let v = 0; v < size; v++) for (let j = 0; j < 2; j++) {
+        const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - v : v;
+        if (!fn[y][x] && i < codewords.length * 8) {
+          mod[y][x] = ((codewords[i >>> 3] >>> (7 - (i & 7))) & 1) !== 0; i++;
+        }
+      }
+    }
+
+    const MASKS = [
+      (x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+      (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => ((x * y) % 2) + ((x * y) % 3) === 0,
+      (x, y) => (((x * y) % 2) + ((x * y) % 3)) % 2 === 0, (x, y) => (((x + y) % 2) + ((x * y) % 3)) % 2 === 0,
+    ];
+    const applyMask = (m) => {
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && MASKS[m](x, y)) mod[y][x] = !mod[y][x];
+    };
+    const penalty = () => {
+      let p = 0, dark = 0;
+      const line = (get) => {
+        for (let a = 0; a < size; a++) {
+          let run = 1;
+          for (let b = 1; b <= size; b++) {
+            if (b < size && get(a, b) === get(a, b - 1)) run++;
+            else { if (run >= 5) p += run - 2; run = 1; }
+          }
+          for (let b = 0; b + 10 < size; b++) {
+            const s = Array.from({ length: 11 }, (_, k) => (get(a, b + k) ? 1 : 0)).join('');
+            if (s === '10111010000' || s === '00001011101') p += 40;
+          }
+        }
+      };
+      line((a, b) => mod[a][b]); line((a, b) => mod[b][a]);
+      for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) {
+        const c = mod[y][x];
+        if (c === mod[y][x + 1] && c === mod[y + 1][x] && c === mod[y + 1][x + 1]) p += 3;
+      }
+      mod.forEach((r) => r.forEach((c) => { if (c) dark++; }));
+      const total = size * size;
+      p += (Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1) * 10;
+      return p;
+    };
+
+    let best = 0, bestP = Infinity;
+    for (let m = 0; m < 8; m++) {
+      applyMask(m); drawFormat(m);
+      const p = penalty();
+      if (p < bestP) { bestP = p; best = m; }
+      applyMask(m);
+    }
+    applyMask(best); drawFormat(best);
+    return mod;
+  }
+
+  function svg(text, dark = '#000', light = '#fff') {
+    const m = matrix(text), q = 3, n = m.length + q * 2;
+    let d = '';
+    m.forEach((row, y) => row.forEach((c, x) => { if (c) d += `M${x + q},${y + q}h1v1h-1z`; }));
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><rect width="${n}" height="${n}" fill="${light}"/><path d="${d}" fill="${dark}"/></svg>`;
+  }
+
+  const api = { matrix, svg };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.QR = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(() => {
+'use strict';
+const ARTIFACT_URL = '';
+const ONLINE = true;
+const IS_PHONE = location.hash === '#p' || location.pathname.startsWith('/play');
+addEventListener('hashchange', () => location.reload());
+const SPEED = (() => { try { return Number(localStorage.getItem('oyFast')) || 1; } catch { return 1; } })();
+const T_TRAVEL = 6000 * SPEED, T_WIN = 15000 * SPEED, T_AFTER = 3500 * SPEED;
+const N_LOC = 6;
+// red, yellow, blue, green, orange, grey
+const COLORS = ['#c8463a', '#e3b33a', '#3f7fc4', '#4f9a4f', '#e8822e', '#8e9396'];
+const BOT_NAMES = ['جاسم', 'مبارك', 'فهد', 'ناصر', 'يوسف', 'خالد'];
+// time of day for the six dive spots: dawn, morning, noon, afternoon, sunset, night
+const TOD = [
+  { sky: ['#141c3a', '#4b4a7a', '#d98f78'], sun: [1180, 300, 0], glow: 1, moon: 0, stars: 0.5, dark: 0.32, warm: 0.12, uw: 0.45, ship: ['#3a3f68', '#d9917a'] },
+  { sky: ['#3f7fc0', '#8fbfe6', '#f4dfb4'], sun: [1250, 150, 1], glow: 0.2, moon: 0, stars: 0, dark: 0, warm: 0.08, uw: 0.08, ship: ['#7fb3e0', '#f4dfb4'] },
+  { sky: ['#2f7ad4', '#78b6ef', '#cfe8fb'], sun: [800, 44, 1], glow: 0, moon: 0, stars: 0, dark: 0, warm: 0, uw: 0, ship: ['#5ea0e6', '#cfe8fb'] },
+  { sky: ['#4f88c2', '#b6b48f', '#f0c987'], sun: [420, 130, 1], glow: 0.2, moon: 0, stars: 0, dark: 0.04, warm: 0.16, uw: 0.1, ship: ['#8fa9b8', '#f0c987'] },
+  { sky: ['#26294f', '#b84f55', '#f39a52'], sun: [300, 236, 1], glow: 0.9, moon: 0, stars: 0, dark: 0.16, warm: 0.3, uw: 0.35, ship: ['#7a4560', '#f39a52'] },
+  { sky: ['#03060f', '#0a1428', '#14243e'], sun: [300, 420, 0], glow: 0, moon: 1, stars: 1, dark: 0.52, warm: 0, uw: 0.7, ship: ['#0a1428', '#1d3150'] },
+];
+const $ = (s, r = document) => r.querySelector(s);
+const now = () => Date.now();
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clean = (s) => String(s || '').replace(/[<>&"']/g, '').trim().slice(0, 12);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const share = (n) => (n === 1 ? 6 : n === 2 ? 3 : n === 3 ? 2 : 1);
+function onlineRoom(role, code) {
+  return new Promise((resolve) => {
+    const ss = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch {} return null; };
+    let id = ss('oyId'); if (!id) { id = Math.random().toString(36).slice(2, 12); ss('oyId', id); }
+    let ws = null, you = id, conn = false, peersArr = [], myPres = {}, done = false, roomCode = code || (role === 'host' ? ss('oyHostCode') : '');
+    const peerL = [], connL = [], topicL = {};
+    const api = {
+      error: null, code: () => roomCode,
+      peers: () => peersArr,
+      onPeers(f) { peerL.push(f); return () => {}; },
+      on(t, f) { (topicL[t] = topicL[t] || []).push(f); return () => {}; },
+      presence(p) { for (const k in p) { if (p[k] === null) delete myPres[k]; else myPres[k] = p[k]; } send({ t: 'presence', patch: p }); return Promise.resolve(); },
+      emit(t, d) { send({ t: 'emit', topic: t, data: d }); return Promise.resolve(); },
+      connected: () => conn,
+      onConnection(f) { connL.push(f); setTimeout(() => f(conn)); return () => {}; },
+    };
+    function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+    function open() {
+      const q = new URLSearchParams({ role, id, room: roomCode || '' });
+      ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?' + q);
+      ws.onopen = () => { conn = true; connL.forEach((f) => f(true)); if (Object.keys(myPres).length) send({ t: 'presence', patch: myPres }); };
+      ws.onmessage = (e) => {
+        let m; try { m = JSON.parse(e.data); } catch { return; }
+        if (m.t === 'hello') { you = m.you; roomCode = m.code; if (role === 'host') ss('oyHostCode', m.code); if (!done) { done = true; resolve(api); } }
+        else if (m.t === 'error') { api.error = m.e; if (!done) { done = true; resolve(api); } try { ws.onclose = null; ws.close(); } catch {} }
+        else if (m.t === 'peers') {
+          const prev = new Set(peersArr.map((p) => p.peer));
+          peersArr = Object.freeze(m.peers.map((p) => Object.freeze({ peer: p.peer, presence: Object.freeze(p.presence || {}), isMe: p.peer === you, sameTab: p.peer === you })));
+          const joined = peersArr.filter((p) => !prev.has(p.peer));
+          peerL.forEach((f) => f({ peers: peersArr, joined, left: [], updated: peersArr }));
+        } else if (m.t === 'msg') (topicL[m.topic] || []).forEach((f) => f({ topic: m.topic, data: m.data, peer: m.peer }));
+      };
+      ws.onclose = () => { conn = false; connL.forEach((f) => f(false)); setTimeout(open, 1500); };
+    }
+    open();
+  });
+}
+const roomP = ONLINE ? (IS_PHONE ? Promise.resolve(null) : onlineRoom('host'))
+  : (window.claude && typeof window.claude.use === 'function') ? window.claude.use('room').catch(() => null) : Promise.resolve(null);
+
+// ═════════════ drawings ═════════════
+const DEFS = `<defs>
+  <linearGradient id="hullG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d5732"/><stop offset="1" stop-color="#3f2312"/></linearGradient>
+  <linearGradient id="sailShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <radialGradient id="pearlG" cx=".36" cy=".32" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#f1ebdf"/><stop offset="1" stop-color="#b8ad9b"/></radialGradient>
+</defs>`;
+document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${DEFS}</svg>`);
+let pid = 0;
+const pearlSVG = () => { const id = 'pg' + (++pid); return `<svg viewBox="0 0 40 40"><defs><radialGradient id="${id}" cx=".36" cy=".32" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#f1ebdf"/><stop offset="1" stop-color="#b8ad9b"/></radialGradient></defs><circle cx="20" cy="20" r="17" fill="url(#${id})"/><circle cx="14" cy="13" r="4" fill="#fff" opacity=".9"/></svg>`; };
+// a diver in a white t-shirt with a coloured wrap (wizar) and a rope at the waist
+function diverG(c) {
+  return `<g>
+    <rect x="15" y="72" width="6.5" height="26" rx="3" fill="#a8714a"/><rect x="24.5" y="72" width="6.5" height="26" rx="3" fill="#a8714a"/>
+    <path d="M12 50 L34 50 L37 80 Q23 84 9 80 Z" fill="${c}"/>
+    <path d="M17 54 L15 79 M23 54 L23 81 M29 54 L31 79" stroke="rgba(0,0,0,.18)" stroke-width="1.6"/>
+    <path d="M11 52 Q23 57 35 52" stroke="#c98d55" stroke-width="3" fill="none"/>
+    <path d="M33 54 q9 5 4 14 q-6 7 -1 13" stroke="#c98d55" stroke-width="2.4" fill="none"/>
+    <path d="M10 28 L4 44 L9 47 L14 36 Z M36 28 L42 44 L37 47 L32 36 Z" fill="#a8714a"/>
+    <path d="M13 24 Q23 20 33 24 L38 33 L33 36 L33 52 L13 52 L13 36 L8 33 Z" fill="#fbfbf8" stroke="#d9d5cc" stroke-width="1"/>
+    <path d="M18 23 Q23 28 28 23" stroke="#d9d5cc" stroke-width="1.4" fill="none"/>
+    <rect x="20" y="17" width="6" height="7" fill="#a8714a"/>
+    <ellipse cx="23" cy="11" rx="8.5" ry="9.5" fill="#a8714a"/>
+    <path d="M14.5 10 Q14 1 23 1 Q32 1 31.5 10 Q28 5 23 5 Q18 5 14.5 10 Z" fill="#1e1612"/>
+    <path d="M15 12 Q15 21 23 21 Q31 21 31 12 Q29 18 23 18 Q17 18 15 12 Z" fill="#2a1d16"/>
+    <circle cx="19.5" cy="10.5" r="1.2" fill="#1b0f08"/><circle cx="26.5" cy="10.5" r="1.2" fill="#1b0f08"/>
+  </g>`;
+}
+const diverSVG = (c) => `<svg viewBox="0 0 46 100">${diverG(c)}</svg>`;
+function shipBack(c) {
+  return `<g>
+    <line x1="250" y1="26" x2="250" y2="208" stroke="#3e2414" stroke-width="7" stroke-linecap="round"/>
+    <line x1="250" y1="26" x2="446" y2="162" stroke="#2a160a" stroke-width="1.6"/><line x1="250" y1="26" x2="16" y2="172" stroke="#2a160a" stroke-width="1.6"/>
+    <path d="M250 22 L282 30 L250 38 Z" fill="${c}"/>
+    <polygon points="72,130 420,18 260,200" fill="#efe6d2"/>
+    <polygon points="72,130 420,18 260,200" fill="${c}" opacity=".55"/>
+    <polygon points="72,130 420,18 260,200" fill="url(#sailShade)"/>
+    <path d="M260 200 L150 104 M260 200 L240 75 M260 200 L332 47" stroke="rgba(0,0,0,.16)" stroke-width="2"/>
+    <polygon points="72,130 420,18 260,200" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2.5"/>
+    <line x1="64" y1="133" x2="428" y2="14" stroke="#3e2414" stroke-width="6" stroke-linecap="round"/>
+    <rect x="372" y="170" width="62" height="38" rx="3" fill="#5a3219"/><rect x="384" y="180" width="14" height="14" fill="#2a160a"/><rect x="408" y="180" width="14" height="14" fill="#2a160a"/>
+  </g>`;
+}
+function shipFront(c, name) {
+  return `<g>
+    <path d="M8 166 Q20 200 52 208 L404 204 Q430 200 444 158 L452 162 Q450 210 436 238 Q414 292 330 300 L130 300 Q60 296 34 246 Q18 214 8 166 Z" fill="url(#hullG)" stroke="#2a160a" stroke-width="3"/>
+    <path d="M30 222 Q60 214 404 212 Q428 208 440 196" stroke="${c}" stroke-width="9" fill="none"/>
+    <path d="M36 246 Q200 262 436 240 M50 272 Q200 288 420 266" stroke="rgba(0,0,0,.28)" stroke-width="2.5" fill="none"/>
+    <circle cx="70" cy="234" r="5" fill="#c9a96b"/><circle cx="96" cy="236" r="5" fill="#c9a96b"/>
+    ${name ? `<text x="236" y="262" text-anchor="middle" direction="rtl" font-family="Cairo, sans-serif" font-weight="900" font-size="34" fill="#f6ead2" stroke="#1d0f06" stroke-width="5" paint-order="stroke">${esc(name)}</text>` : ''}
+  </g>`;
+}
+const WASH = `<path d="M-20 300 Q10 290 40 300 T100 300 T160 300 T220 300 T280 300 T340 300 T400 300 T460 300 T520 300 L520 336 L-20 336 Z" fill="#1f6684"/>
+  <path d="M-20 300 Q10 290 40 300 T100 300 T160 300 T220 300 T280 300 T340 300 T400 300 T460 300 T520 300" fill="none" stroke="#dff3f5" stroke-width="3" opacity=".55"/>`;
+const DIVER_X = [170, 262];
+function shipStatic(c, name, divers) {
+  const ds = DIVER_X.slice(0, divers).map((x) => `<g transform="translate(${x} 112)">${diverG(c)}</g>`).join('');
+  return `<svg viewBox="-20 0 500 340"><g class="rock">${shipBack(c)}${ds}${shipFront(c, name)}${WASH}</g></svg>`;
+}
+const sailIcon = (c) => `<svg viewBox="0 0 92 78"><line x1="46" y1="4" x2="46" y2="62" stroke="#3e2414" stroke-width="4"/><polygon points="10,30 86,6 50,60" fill="${c}"/><path d="M4 60 Q46 74 88 60 L80 72 Q46 80 12 72 Z" fill="#6b3f22"/></svg>`;
+function merchantG(trim, skin = '#c98d5e') {
+  return `<g>
+    <ellipse cx="35" cy="146" rx="20" ry="4" fill="rgba(0,0,0,.3)"/>
+    <path d="M20 56 Q35 50 50 56 L55 142 Q35 147 15 142 Z" fill="#f7f3ea"/>
+    <path d="M19 56 Q11 92 12 143 L25 143 L29 60 Z" fill="#2a1a10"/><path d="M51 56 Q59 92 58 143 L45 143 L41 60 Z" fill="#2a1a10"/>
+    <path d="M29 60 L25 143 M41 60 L45 143" stroke="${trim}" stroke-width="2.6"/>
+    <circle cx="16" cy="100" r="4" fill="${skin}"/><circle cx="54" cy="100" r="4" fill="${skin}"/>
+    <path d="M20 36 Q35 14 50 36 L54 62 Q44 55 41 47 L29 47 Q26 55 16 62 Z" fill="#fbfbf7"/>
+    <ellipse cx="35" cy="38" rx="10" ry="12" fill="${skin}"/>
+    <circle cx="31" cy="37" r="1.4" fill="#2b1a10"/><circle cx="39" cy="37" r="1.4" fill="#2b1a10"/>
+    <path d="M29 45 Q35 49 41 45" stroke="#2b1a10" stroke-width="1.6" fill="none"/>
+    <path d="M22 32 Q35 13 48 32 Q35 25 22 32 Z" fill="#fbfbf7"/>
+    <ellipse cx="35" cy="24" rx="12.5" ry="3.4" fill="none" stroke="#141414" stroke-width="3"/>
+  </g>`;
+}
+const SHARK = `<svg viewBox="0 0 340 110"><path d="M0 52 Q50 26 150 28 L176 2 L196 30 Q256 34 292 50 L334 18 L322 56 L336 96 L292 64 Q250 76 196 76 L174 98 L162 76 Q60 78 0 52 Z" fill="#33475a"/>
+  <path d="M8 56 Q70 72 170 72 Q240 72 290 60 Q240 68 170 68 Q80 68 8 56 Z" fill="#9fb0bc"/>
+  <circle cx="44" cy="44" r="5" fill="#0a0a0a"/><path d="M6 54 L14 60 L20 54 L26 61 L32 55 L38 62 L44 56" stroke="#fff" stroke-width="2.5" fill="none"/>
+  <path d="M84 40 Q88 50 84 60 M96 40 Q100 50 96 60 M108 40 Q112 50 108 60" stroke="#22323f" stroke-width="2.5" fill="none"/></svg>`;
+const OYSTERS = [[10, 9], [27, 15], [44, 7], [61, 14], [78, 8], [92, 16]];
+const oyster1 = (x, b) => `<svg class="oyster" viewBox="0 0 400 220" style="left:${x}%;bottom:${b}%">
+    <path d="M30 150 Q60 40 200 30 Q340 40 370 150 Q300 120 200 118 Q100 120 30 150 Z" fill="#6e6a62" stroke="#3c3934" stroke-width="6"/>
+    <path d="M70 120 Q200 40 330 120 M110 128 Q200 70 290 128" stroke="#8a857a" stroke-width="5" fill="none"/>
+    <path d="M30 150 Q100 214 200 216 Q300 214 370 150 Q300 168 200 168 Q100 168 30 150 Z" fill="#5c574f" stroke="#3c3934" stroke-width="6"/>
+    <ellipse cx="200" cy="150" rx="150" ry="22" fill="#d9cfc1"/>
+    <circle class="glow" cx="200" cy="124" r="70" fill="#fff6d8" opacity=".35"/>
+    <circle cx="200" cy="134" r="34" fill="url(#pearlG)"/><circle cx="188" cy="122" r="9" fill="#fff"/>
+  </svg>`;
+function uwBase(li) {
+  let bubs = '';
+  for (let i = 0; i < 14; i++) { const s = 6 + Math.random() * 16; bubs += `<i class="bub" style="left:${Math.random() * 100}%;width:${s}px;height:${s}px;animation-duration:${4 + Math.random() * 6}s;animation-delay:${-Math.random() * 8}s"></i>`; }
+  return `<div class="uw"><svg class="uwbg" viewBox="0 0 400 500" preserveAspectRatio="none">
+    <polygon class="ray" points="60,0 120,0 220,500 120,500" fill="#bfefff"/><polygon class="ray" points="230,0 270,0 360,500 290,500" fill="#bfefff" style="animation-delay:-3s"/>
+    <path d="M0 440 Q100 405 200 430 T400 420 L400 500 L0 500 Z" fill="#7c6a45"/>
+    <path d="M40 440 Q30 380 50 330 Q60 380 52 440 M350 432 Q370 370 352 320 Q340 380 344 432 M320 436 Q312 400 326 370" stroke="#2e6e4a" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </svg>${bubs}<div class="uwdark" style="opacity:${(TOD[li] || TOD[0]).uw}"></div></div>`;
+}
+const ringSVG = (frac, r = 44) => { const c = 2 * Math.PI * r; return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${r}" fill="rgba(0,0,0,.35)" stroke="rgba(255,255,255,.18)" stroke-width="9"/><circle class="arc" cx="50" cy="50" r="${r}" fill="none" stroke="#f7d27a" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - frac)}"/></svg>`; };
+function setRing(el, frac, r = 44) { const a = el && el.querySelector('.arc'); if (a) a.setAttribute('stroke-dashoffset', 2 * Math.PI * r * (1 - Math.max(0, Math.min(1, frac)))); }
+
+// Underwater view, full screen for the diver: only the sea floor, the oyster, and the other divers in this spot.
+// o = { key, kind: 'p'|'s'|null, li, divers: [{id, c, t, me}], myT, frac, gain }
+// each diver swims down to one of the oysters
+const SLOTS = OYSTERS.map(([x, b]) => [x, 100 - b - 37]);
+const ORDER = [2, 3, 1, 4, 0, 5];
+function Under(el) {
+  let key = '', seen = new Map(), uw = null, gainShown = false, slot = 0;
+  function addDiver(d, kind) {
+    const e = document.createElement('div'); e.className = 'uwd' + (d.me ? ' me' : '');
+    e.innerHTML = `<svg class="sw" viewBox="0 0 46 100">${diverG(d.c)}</svg>`;
+    const [tx, ty] = kind === 'p' ? SLOTS[ORDER[slot++ % 6]] : [50 + rnd(-12, 12), 40 + rnd(-6, 6)];
+    e.style.left = tx + '%'; e.style.top = ty + '%';
+    uw.appendChild(e);
+    e.animate([{ top: '-30%' }, { top: ty + '%' }], { duration: 1300, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    const rec = { e, x: tx, y: ty, grabbed: false, born: now() };
+    if (kind === 'p') setTimeout(() => e.classList.add('float'), 1300);
+    return rec;
+  }
+  function grab(rec) {
+    if (rec.grabbed) return; rec.grabbed = true;
+    const wait = Math.max(0, 1300 - (now() - rec.born));
+    setTimeout(() => {
+      const sh = document.createElement('div'); sh.className = 'shark'; sh.innerHTML = SHARK;
+      sh.style.top = rec.y + '%'; uw.appendChild(sh);
+      const toX = rec.x - 10;
+      sh.animate([{ left: '115%' }, { left: toX + '%', offset: 0.4 }, { left: '-110%' }], { duration: 2200, easing: 'ease-in', fill: 'forwards' });
+      rec.e.animate([{ left: rec.x + '%', transform: 'none' }, { left: rec.x + '%', transform: 'none', offset: 0.4 }, { left: (rec.x - 6) + '%', transform: 'rotate(-80deg)', offset: 0.5 }, { left: '-70%', transform: 'rotate(-90deg)' }], { duration: 2200, easing: 'ease-in', fill: 'forwards' });
+      setTimeout(() => { rec.e.remove(); sh.remove(); }, 2300);
+      if (rec.isMe) buzz([60, 40, 60]);
+    }, wait);
+  }
+  return {
+    update(o) {
+      if (o.key !== key) {
+        key = o.key; seen = new Map(); gainShown = false; slot = 0;
+        el.innerHTML = uwBase(o.li); uw = el.querySelector('.uw');
+        uw.insertAdjacentHTML('beforeend', `<div class="ring">${ringSVG(o.frac)}</div>`);
+      }
+      if (o.kind === 'p' && !uw.querySelector('.oyster')) uw.insertAdjacentHTML('afterbegin', OYSTERS.map(([x, b]) => oyster1(x, b)).join(''));
+      const list = o.divers.slice().sort((a, b) => a.t - b.t);
+      for (const d of list) {
+        // at a shark spot, divers who went down before you are already gone
+        if (o.kind === 's' && !d.me && d.t < o.myT - 50 && !seen.has(d.id)) { seen.set(d.id, null); continue; }
+        if (!seen.has(d.id)) { const r = addDiver(d, o.kind); r.isMe = d.me; seen.set(d.id, r); }
+        const rec = seen.get(d.id);
+        if (rec && o.kind === 's') grab(rec);
+      }
+      const ring = uw.querySelector('.ring');
+      if (ring) { ring.hidden = o.frac == null; if (o.frac != null) setRing(ring, o.frac); }
+      if (o.gain && !gainShown) {
+        gainShown = true;
+        uw.querySelectorAll('.oyster').forEach((e) => e.classList.add('taken'));
+        uw.insertAdjacentHTML('beforeend', `<div class="gain">${Array.from({ length: o.gain }, (_, i) => pearlSVG().replace('<svg', `<svg style="animation-delay:${i * 0.12}s"`)).join('')}</div><div class="gainN">+${o.gain}</div>`);
+        SFX.chime(o.gain); buzz(80);
+      }
+    },
+    clear() { if (key) { key = ''; el.innerHTML = ''; } },
+  };
+}
+
+// ═════════════ sound ═════════════
+let AC = null, master = null, muted = false;
+function audioInit() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = 0.9; master.connect(AC.destination); } catch { AC = null; }
+}
+const bufCache = {};
+function noiseBuf(sec = 2, brown = false) {
+  const k = sec + (brown ? 'b' : 'w'); if (bufCache[k]) return bufCache[k];
+  const b = AC.createBuffer(1, AC.sampleRate * sec, AC.sampleRate), d = b.getChannelData(0); let last = 0;
+  for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+  return (bufCache[k] = b);
+}
+// Dive splash, synthesized sample by sample. Three kinds: 0 spray, 1 heavy plunge, 2 clean dive.
+const splashKind = 1; // always the heavy, muffled plunge
+let splashBufs = {};
+function makeHeavy(sr, n, d) {
+  // a muffled, deep rush of water (as heard right as you go under)
+  let l1 = 0, l2 = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr, w = Math.random() * 2 - 1;
+    const ramp = t < 0.09 ? Math.pow(Math.sin((t / 0.09) * Math.PI / 2), 2) : 1;
+    const cut = 0.045 * Math.exp(-t / 0.5) + 0.012;
+    l1 += cut * (w - l1); l2 += cut * (l1 - l2);
+    d[i] = l2 * ramp * Math.exp(-Math.max(0, t - 0.09) / 0.55) * 8;
+  }
+  const bubble = (t0, f0, amp, len) => {
+    const i0 = Math.floor(t0 * sr), m = Math.floor(len * 2.6 * sr); let ph = 0;
+    for (let k = 0; k < m && i0 + k < n; k++) {
+      const tt = k / sr; ph += 2 * Math.PI * f0 * (1 + 1.5 * Math.min(tt, len) / len) / sr;
+      d[i0 + k] += Math.sin(ph) * amp * Math.min(1, tt / 0.003) * Math.exp(-tt / (len * 0.4));
+    }
+  };
+  // a thick burst of bubbles right at the start, then fewer and fewer rising away
+  for (let k = 0; k < 110; k++) { const t0 = 0.02 + Math.pow(Math.random(), 1.8) * 0.7; bubble(t0, rnd(150, 520), rnd(0.12, 0.3) * Math.exp(-t0 * 1.2), rnd(0.03, 0.09)); }
+  for (let k = 0; k < 30; k++) { const t0 = rnd(0.6, 1.8); bubble(t0, rnd(220, 650), rnd(0.06, 0.16), rnd(0.03, 0.07)); }
+}
+function makeSplash(kind) {
+  const sr = AC.sampleRate, n = Math.floor(sr * 2), b = AC.createBuffer(1, n, sr), d = b.getChannelData(0);
+  if (kind === 1) { makeHeavy(sr, n, d); return normalize(b, d, n); }
+  const P = [
+    { a: 0.045, dec: 0.2, cut0: 0.55, cutT: 0.25, body: 0.5, bodyT: 0.35, thump: 0, drops: 260, dF: [900, 3800], dT: 1.0, bub: 26, bF: [260, 700], bT: [0.18, 1.3], bA: 0.15 },
+    { a: 0.06, dec: 0.32, cut0: 0.22, cutT: 0.3, body: 0.9, bodyT: 0.5, thump: 0, drops: 150, dF: [700, 2600], dT: 1.3, bub: 45, bF: [170, 520], bT: [0.25, 1.6], bA: 0.2 },
+    { a: 0.035, dec: 0.09, cut0: 0.85, cutT: 0.08, body: 0.25, bodyT: 0.15, thump: 0, drops: 70, dF: [1500, 4200], dT: 0.35, bub: 80, bF: [300, 900], bT: [0.08, 1.5], bA: 0.11 },
+  ][kind];
+  let lp = 0, hp = 0, th = 0, sp1 = 0, sp2 = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr, w = Math.random() * 2 - 1;
+    // water rushing in: a smooth rise instead of a sharp hit
+    const ramp = t < P.a ? Math.pow(Math.sin((t / P.a) * Math.PI / 2), 2) : 1;
+    const a = ramp * Math.exp(-Math.max(0, t - P.a) / P.dec);
+    const cut = P.cut0 * Math.exp(-t / P.cutT) + 0.03;
+    // spray band ~600 Hz to ~4 kHz (two-pole), so it sounds wet instead of hissy
+    sp1 += 0.28 * (w - sp1); sp2 += 0.28 * (sp1 - sp2);
+    lp += cut * 0.35 * (w - lp); hp += 0.085 * (sp2 - hp); th += 0.012 * (w - th);
+    d[i] = (sp2 - hp) * a * 0.9 + lp * ramp * Math.exp(-Math.max(0, t - P.a) / P.bodyT) * P.body * 1.4;
+  }
+  const chirp = (t0, f0, amp, len, rise) => {
+    const i0 = Math.floor(t0 * sr), m = Math.floor(len * 2.6 * sr); let ph = 0;
+    for (let k = 0; k < m && i0 + k < n; k++) {
+      const tt = k / sr; ph += 2 * Math.PI * f0 * (1 + rise * Math.min(tt, len) / len) / sr;
+      d[i0 + k] += Math.sin(ph) * amp * Math.min(1, tt / 0.0025) * Math.exp(-tt / (len * 0.35));
+    }
+  };
+  for (let k = 0; k < P.drops; k++) { const t0 = P.a + 0.01 + Math.pow(Math.random(), 2.2) * P.dT; chirp(t0, rnd(P.dF[0], P.dF[1]) * 0.6, rnd(0.03, 0.12) * Math.exp(-t0 * 1.5), rnd(0.008, 0.03), 1.2); }
+  for (let k = 0; k < P.bub; k++) { const t0 = rnd(P.bT[0], P.bT[1]); chirp(t0, rnd(P.bF[0], P.bF[1]), rnd(0.5, 1.4) * P.bA * 0.75, rnd(0.03, 0.08), 1.6); }
+  return normalize(b, d, n);
+}
+function normalize(b, d, n) {
+  let peak = 0; for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]));
+  for (let i = 0; i < n; i++) d[i] = (d[i] / peak) * 0.95 * (i > n - 3000 ? (n - i) / 3000 : 1);
+  return b;
+}
+let anchorBuf = null;
+function makeAnchor() {
+  const sr = AC.sampleRate, n = Math.floor(sr * 2.4), b = AC.createBuffer(1, n, sr), d = b.getChannelData(0);
+  // partials of a heavy cast-iron body: low, inharmonic, each slightly detuned so it beats
+  const P = [[212, 0.9, 1.6], [214.5, 0.5, 1.4], [583, 0.75, 1.1], [1092, 0.5, 0.75], [1733, 0.38, 0.5], [2511, 0.25, 0.32], [3420, 0.16, 0.2], [4470, 0.1, 0.12]];
+  const ph = P.map(() => Math.random() * 6.28);
+  let lp = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr; let v = 0;
+    P.forEach(([f, a, dec], k) => { ph[k] += 2 * Math.PI * f * (1 - 0.004 * Math.exp(-t / 0.05)) / sr; v += Math.sin(ph[k]) * a * Math.exp(-t / dec); });
+    // the strike itself: a short thick knock of noise
+    lp += 0.25 * ((Math.random() * 2 - 1) - lp);
+    v += lp * Math.exp(-t / 0.012) * 2.2;
+    d[i] = v * Math.min(1, t / 0.0008);
+  }
+  return normalize(b, d, n);
+}
+function splashBuf(kind = splashKind) {
+  const list = splashBufs[kind] || (splashBufs[kind] = []);
+  if (list.length < 3) list.push(makeSplash(kind));
+  return list[Math.floor(Math.random() * list.length)];
+}
+function env(g, t, a, peak, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+const SFX = {
+  tick(hi) { if (!AC || muted) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = hi ? 1250 : 880; env(g, t, 0.002, hi ? 0.32 : 0.22, 0.08); o.connect(g).connect(master); o.start(t); o.stop(t + 0.09); },
+  // a body plunging into water: a wet slap, spray, hundreds of droplets, then gurgling bubbles
+  plunge(vol = 1, kind = splashKind) {
+    if (!AC || muted) return;
+    const src = AC.createBufferSource(), g = AC.createGain();
+    src.buffer = splashBuf(kind); g.gain.value = 0.9 * vol;
+    src.connect(g).connect(master); src.start();
+  },
+  chime(n = 1) {
+    if (!AC || muted) return; const t = AC.currentTime;
+    [1318, 1760, 2093, 2637].slice(0, Math.min(4, 1 + Math.ceil(n / 2))).forEach((f, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f; env(g, t + i * 0.11, 0.005, 0.18, 1.2); o.connect(g).connect(master); o.start(t + i * 0.11); o.stop(t + i * 0.11 + 1.3); });
+  },
+  anchor() {
+    if (!AC || muted) return;
+    if (!anchorBuf || anchorBuf.sampleRate !== AC.sampleRate) anchorBuf = makeAnchor();
+    const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = anchorBuf; g.gain.value = 0.85;
+    src.connect(g).connect(master); src.start();
+  },
+  sink() {
+    if (!AC || muted) return; const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = noiseBuf(4, true); f.type = 'lowpass'; f.frequency.value = 260; env(g, t, 0.3, 0.7, 3.8); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + 4);
+  },
+};
+let seaGain = null;
+function seaStart() {
+  if (!AC || seaGain) return;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf(6, true); s.loop = true;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700;
+  const swell = AC.createGain(); swell.gain.value = 0.55;
+  const lfo = AC.createOscillator(), lg = AC.createGain(); lfo.frequency.value = 0.13; lg.gain.value = 0.4; lfo.connect(lg).connect(swell.gain); lfo.start();
+  seaGain = AC.createGain(); seaGain.gain.value = 0;
+  s.connect(f).connect(swell).connect(seaGain).connect(master); s.start();
+}
+function seaLevel(v) { if (!AC) return; seaStart(); seaGain.gain.setTargetAtTime(muted ? 0 : v, AC.currentTime, 0.6); }
+
+// "Oh ya mal": a synthesized nahma-style chant — drum, claps, a lead voice and a chorus answer
+let musicOn = false, musicTimer = null, musicBus = null, droneNodes = null;
+const D4 = 293.66, st = (n) => D4 * Math.pow(2, n / 12);
+const VOW = { o: [450, 800, 2830], a: [730, 1090, 2440] };
+function voice(t, notes, beat, vowel, vol, oct = 1) {
+  const o = AC.createOscillator(), o2 = AC.createOscillator(); o.type = 'sawtooth'; o2.type = 'sawtooth';
+  let tt = t; o.frequency.setValueAtTime(st(notes[0][0]) * oct, t); o2.frequency.setValueAtTime(st(notes[0][0]) * oct * 1.004, t);
+  notes.forEach(([n, b]) => { o.frequency.setTargetAtTime(st(n) * oct, tt, 0.05); o2.frequency.setTargetAtTime(st(n) * oct * 1.004, tt, 0.05); tt += b * beat; });
+  const vib = AC.createOscillator(), vg = AC.createGain(); vib.frequency.value = 5.4; vg.gain.value = 3.2 * oct; vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
+  const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.25); g.gain.setValueAtTime(vol, tt - 0.3); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.15);
+  VOW[vowel].forEach((fq, i) => { const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fq * (oct < 1 ? 0.92 : 1); bp.Q.value = 7; const bg = AC.createGain(); bg.gain.value = [1, 0.55, 0.22][i]; o.connect(bp); o2.connect(bp); bp.connect(bg).connect(g); });
+  g.connect(musicBus);
+  [o, o2, vib].forEach((x) => { x.start(t); x.stop(tt + 0.3); });
+}
+function drum(t, low) { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(low ? 95 : 180, t); o.frequency.exponentialRampToValueAtTime(low ? 45 : 110, t + 0.25); env(g, t, 0.004, low ? 0.7 : 0.35, low ? 0.5 : 0.18); o.connect(g).connect(musicBus); o.start(t); o.stop(t + 0.55); }
+function clap(t) { [0, 0.012, 0.026].forEach((d) => { const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf(0.2); f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 1.2; env(g, t + d, 0.001, 0.32, 0.09); s.connect(f).connect(g).connect(musicBus); s.start(t + d); s.stop(t + d + 0.12); }); }
+function musicCycle(t0) {
+  const beat = 0.42;
+  for (let bar = 0; bar < 4; bar++) {
+    const b0 = t0 + bar * 6 * beat;
+    drum(b0, true); drum(b0 + 2 * beat, false); drum(b0 + 3 * beat, true); drum(b0 + 5 * beat, false);
+    clap(b0 + 1.5 * beat); clap(b0 + 4.5 * beat);
+  }
+  voice(t0 + 0.1, [[7, 2], [8, 0.5], [7, 0.5], [5, 1], [3.5, 1], [3, 1], [0, 2]], beat, 'o', 0.22);
+  voice(t0 + 8.5 * beat, [[5, 1], [3.5, 1], [0, 2]], beat, 'a', 0.16, 0.5);
+  voice(t0 + 8.5 * beat, [[5, 1], [3.5, 1], [0, 2]], beat, 'a', 0.1, 1);
+  voice(t0 + 13 * beat, [[3, 1], [5, 1], [7, 1], [5, 0.5], [3.5, 0.5], [3, 1], [0, 3.5]], beat, 'o', 0.2);
+  voice(t0 + 20.5 * beat, [[0, 1], [3.5, 1], [0, 1.5]], beat, 'a', 0.15, 0.5);
+  return t0 + 24 * beat;
+}
+function musicStart() {
+  if (!AC || musicOn) return; musicOn = true;
+  musicBus = AC.createGain(); musicBus.gain.value = muted ? 0 : 0.55; musicBus.connect(master);
+  const d1 = AC.createOscillator(), d2 = AC.createOscillator(), dg = AC.createGain(); d1.frequency.value = D4 / 4; d2.frequency.value = D4 * 3 / 8; dg.gain.value = 0.05; d1.connect(dg); d2.connect(dg); dg.connect(musicBus); d1.start(); d2.start(); droneNodes = [d1, d2];
+  let next = AC.currentTime + 0.15;
+  const pump = () => { if (!musicOn) return; while (next < AC.currentTime + 1.5) next = musicCycle(next); musicTimer = setTimeout(pump, 400); };
+  pump();
+}
+function musicStop() {
+  if (!musicOn) return; musicOn = false; clearTimeout(musicTimer);
+  const bus = musicBus, dn = droneNodes; bus.gain.setTargetAtTime(0, AC.currentTime, 0.4); setTimeout(() => { try { bus.disconnect(); dn.forEach((d) => d.stop()); } catch {} }, 2500);
+}
+function setMuted(m) {
+  muted = m; if (!AC) return;
+  if (musicBus) musicBus.gain.setTargetAtTime(m ? 0 : 0.55, AC.currentTime, 0.2);
+  if (seaGain && m) seaGain.gain.setTargetAtTime(0, AC.currentTime, 0.2);
+}
+const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch {} };
+
+function soundBoard() {
+  let el = $('#sb');
+  if (el) { el.hidden = !el.hidden; return; }
+  el = document.createElement('div'); el.id = 'sb';
+  const row = (icon, label, act, extra = '') => `<div class="sbRow"><span class="sbI">${icon}</span><b>${label}</b>${extra}<button class="sbPlay" data-a="${act}" aria-label="تشغيل">▶</button></div>`;
+  el.innerHTML = `<div class="sbCard"><div class="sbHead"><b>🎧 الأصوات</b><button class="sbX" aria-label="إغلاق">✕</button></div>
+    ${row('💦', 'الغوص', 'p1')}
+    ${row('⏱', 'التايمر', 'tick')}${row('⏱', 'آخر ٥ ثواني', 'tick5')}${row('🌊', 'البحر وقت الإبحار', 'sea')}
+    ${row('🦪', 'أخذ اللؤلؤ', 'chime')}${row('⚓', 'دخول لاعب (السن)', 'anchor')}${row('🚢', 'غرق السفينة', 'sink')}${row('🎵', 'أوه يامال (الميناء)', 'music')}
+    <div class="sbRow off"><span class="sbI">🦈</span><b>القرش: بدون صوت</b></div></div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) { if (e.target === el) el.hidden = true; return; }
+    audioInit(); if (!AC) return;
+    if (muted) setMuted(false);
+    if (b.classList.contains('sbX')) { el.hidden = true; return; }
+    const a = b.dataset.a;
+    if (a[0] === 'p') SFX.plunge(1, +a[1]);
+    if (a === 'tick') [0, 1, 2].forEach((k) => setTimeout(() => SFX.tick(false), k * 1000));
+    if (a === 'tick5') [0, 1, 2].forEach((k) => setTimeout(() => SFX.tick(true), k * 1000));
+    if (a === 'sea') { seaLevel(0.5); setTimeout(() => seaLevel(0), 5000); }
+    if (a === 'chime') SFX.chime(6);
+    if (a === 'sink') SFX.sink();
+    if (a === 'anchor') SFX.anchor();
+    if (a === 'music') { if (musicOn) musicStop(); else musicStart(); }
+  });
+}
+
+// renders one sound offline (used to export the sound files)
+window.__oyRender = async (name, secs) => {
+  const keep = { AC, master, muted, seaGain, musicBus, splashBufs, bufCache: Object.assign({}, bufCache) };
+  const off = new OfflineAudioContext(1, Math.floor(44100 * secs), 44100);
+  AC = off; master = off.createGain(); master.connect(off.destination); muted = false; splashBufs = {};
+  Object.keys(bufCache).forEach((k) => delete bufCache[k]);
+  if (name.startsWith('plunge')) SFX.plunge(1, +name.slice(6));
+  if (name === 'tick') [0, 1, 2].forEach((k) => { const o = off.createOscillator(), g = off.createGain(); o.type = 'triangle'; o.frequency.value = 880; env(g, k, 0.002, 0.22, 0.08); o.connect(g).connect(master); o.start(k); o.stop(k + 0.09); });
+  if (name === 'tick5') [0, 1, 2].forEach((k) => { const o = off.createOscillator(), g = off.createGain(); o.type = 'triangle'; o.frequency.value = 1250; env(g, k, 0.002, 0.32, 0.08); o.connect(g).connect(master); o.start(k); o.stop(k + 0.09); });
+  if (name === 'chime') SFX.chime(6);
+  if (name === 'sink') SFX.sink();
+  if (name === 'anchor') { anchorBuf = null; SFX.anchor(); }
+  if (name === 'sea') { seaGain = null; seaStart(); seaGain.gain.value = 0.5; }
+  if (name === 'music') { musicBus = off.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master); let t = 0.1; while (t < secs - 1) t = musicCycle(t); }
+  const buf = await off.startRendering();
+  AC = keep.AC; master = keep.master; muted = keep.muted; seaGain = keep.seaGain; musicBus = keep.musicBus; splashBufs = keep.splashBufs;
+  Object.keys(bufCache).forEach((k) => delete bufCache[k]); Object.assign(bufCache, keep.bufCache);
+  return Array.from(buf.getChannelData(0), (v) => Math.round(v * 32000));
+};
+
+// ═════════════════════════════ HOST ═════════════════════════════
+// ring of six ships around the diving spot; angle 0 = right side, perspective ellipse
+const CX = 800, CY = 505;
+const RING = [120, 60, 0, 300, 240, 180].map((a) => {
+  const r = a * Math.PI / 180, x = CX + 610 * Math.cos(r), y = CY + 188 * Math.sin(r);
+  return { x, y, s: 0.54 + ((y - 342) / (668 - 342)) * 0.4, right: x < CX };
+});
+function host() {
+  $('#host').hidden = false;
+  const stage = $('#stage');
+  const G = { gid: '', ph: 'lobby', li: -1, end: 0, winStart: 0, locs: [], seats: [], winners: [] };
+  let room = null, canEmit = false, local = null, wavesEls = [];
+  const firstSeen = new Map();
+
+  const hostEl = $('#host');
+  function fit() { const W = hostEl.clientWidth, H = hostEl.clientHeight, s = Math.min(W / 1600, H / 900); stage.style.transform = `translate(${(W - 1600 * s) / 2}px, ${(H - 900 * s) / 2}px) scale(${s})`; stage._s = s; }
+  new ResizeObserver(fit).observe(hostEl); fit();
+
+  const sb = document.createElement('button'); sb.id = 'soundBtn'; sb.className = 'off'; sb.textContent = '🔇'; sb.setAttribute('aria-label', 'الصوت'); document.body.appendChild(sb);
+  let started = false, kickedAt = 0;
+  const kick = () => { audioInit(); if (!AC) return; started = true; kickedAt = now(); sb.classList.remove('off'); sb.textContent = muted ? '🔇' : '🔊'; const tp = $('#tapSound'); if (tp) tp.remove(); if (G.ph === 'lobby') musicStart(); };
+  ['pointerdown', 'keydown', 'touchstart', 'click'].forEach((ev) => addEventListener(ev, () => { if (!started) kick(); }, { capture: true }));
+  // try to start the sound immediately when the page opens
+  audioInit();
+  if (AC) {
+    const tryStart = () => { if (!started && AC.state === 'running') kick(); };
+    AC.onstatechange = tryStart; tryStart();
+    AC.resume().then(tryStart).catch(() => {});
+    const poll = setInterval(() => { if (started) clearInterval(poll); else { AC.resume().catch(() => {}); tryStart(); } }, 1000);
+  }
+  sb.onclick = (e) => { e.stopPropagation(); if (!started || now() - kickedAt < 800) return; setMuted(!muted); sb.textContent = muted ? '🔇' : '🔊'; if (!muted && G.ph === 'lobby') musicStart(); };
+
+  const ctl = document.createElement('div'); ctl.id = 'localCtl';
+  ctl.innerHTML = `<div id="localJoin"><input id="localName" maxlength="12" autocomplete="off" aria-label="اسمك" placeholder="✎"><button class="iconBtn" id="localBtn" aria-label="انضم">⚓</button></div>
+    <button class="diveBtn" id="localDive" aria-label="غوص" hidden>${diverSVG('#c8463a')}</button>`;
+  document.body.appendChild(ctl);
+  const under = document.createElement('div'); under.id = 'localUnder'; under.hidden = true; document.body.appendChild(under);
+  const U = Under(under);
+  try { $('#localName').value = localStorage.getItem('oyName') || ''; } catch {}
+  $('#localBtn').onclick = () => {
+    if (local) { local = null; } else { const n = clean($('#localName').value); if (!n) { $('#localName').focus(); return; } local = n; try { localStorage.setItem('oyName', n); } catch {} }
+    lobbySeats(); render();
+  };
+  $('#localName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#localBtn').click(); });
+  $('#localDive').onclick = () => { const i = G.seats.findIndex((s) => s.k === 'l'); if (i >= 0) dive(i); };
+  addEventListener('keydown', (e) => { if (e.code === 'Space' && G.ph === 'win' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); $('#localDive').click(); } });
+
+  function lobbySeats() {
+    if (G.ph !== 'lobby') return;
+    const list = [];
+    if (local) list.push({ k: 'l', n: local });
+    if (room) {
+      const ps = room.peers().filter((p) => !p.sameTab && p.presence && p.presence.r === 'p' && clean(p.presence.n));
+      ps.forEach((p) => { if (!firstSeen.has(p.peer)) firstSeen.set(p.peer, now()); });
+      ps.sort((a, b) => firstSeen.get(a.peer) - firstSeen.get(b.peer));
+      ps.slice(0, 6 - list.length).forEach((p) => list.push({ k: 'p', peer: p.peer, n: clean(p.presence.n) }));
+    }
+    const before = new Set(G.seats.map((s) => (s.peer || 'local') + s.n));
+    G.seats = list.map((s, i) => Object.assign(s, { c: COLORS[i], d: 2, p: 0, dv: false, r: null, gain: 0, dt: 0 }));
+    if (G.seats.some((s) => !before.has((s.peer || 'local') + s.n))) SFX.anchor();
+    send();
+  }
+
+  function startGame() {
+    musicStop();
+    const used = new Set(G.seats.map((s) => s.n));
+    const bots = BOT_NAMES.filter((n) => !used.has(n));
+    while (G.seats.length < 6) G.seats.push({ k: 'b', n: bots.shift(), bot: {} });
+    G.seats.forEach((s, i) => Object.assign(s, { c: COLORS[i], d: 2, p: 0, dv: false, r: null, gain: 0, dt: 0, sunk: false }));
+    const locs = ['s', 's', 's', 'p', 'p', 'p'];
+    for (let i = locs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [locs[i], locs[j]] = [locs[j], locs[i]]; }
+    G.locs = locs; G.gid = Math.random().toString(36).slice(2, 7); G.winners = [];
+    buildSea(); travel(0);
+  }
+  function travel(i) {
+    G.ph = 'travel'; G.li = i; G.end = now() + T_TRAVEL;
+    G.seats.forEach((s) => { s.dv = false; s.r = null; s.gain = 0; s.dt = 0; });
+    setTime(i); seaLevel(0.5); render(); send();
+  }
+  function openWindow() {
+    G.ph = 'win'; G.winStart = now(); G.end = now() + T_WIN; seaLevel(0);
+    G.seats.forEach((s) => {
+      if (s.k !== 'b') return;
+      s.bot = {};
+      if (s.d <= 0) return;
+      const base = s.d >= 2 ? 0.5 : (s.p > 0 ? 0.07 : 0.3);
+      if (Math.random() < base) s.bot.at = now() + rnd(1500, T_WIN - 1500);
+    });
+    render(); send();
+  }
+  function dive(i) {
+    const s = G.seats[i];
+    if (!s || G.ph !== 'win' || s.dv || s.d <= 0) return;
+    s.dv = true; s.r = G.locs[G.li]; s.dt = now() - G.winStart;
+    G.seats.forEach((b) => { if (b.k === 'b' && !b.dv && !b.bot.at && b.d >= 2 && Math.random() < 0.2 && G.end - now() > 3000) b.bot.at = now() + rnd(900, 3500); });
+    render(); send();
+  }
+  function closeWindow() {
+    const divers = G.seats.filter((s) => s.dv);
+    const isPearl = G.locs[G.li] === 'p';
+    divers.forEach((s) => { if (isPearl) { s.gain = share(divers.length); s.p += s.gain; } else { s.d -= 1; } s.dv = false; });
+    G.ph = 'after'; G.end = now() + T_AFTER;
+    G.seats.forEach((s, i) => { if (s.d <= 0 && !s.sunk) { s.sunk = true; setTimeout(() => { const el = $('#ship' + i); if (el) { el.classList.add('sink'); SFX.sink(); } }, 1600); } });
+    render(); send();
+  }
+  function finish() {
+    G.ph = 'end';
+    G.seats.forEach((s) => { s.fp = s.d > 0 ? s.p : 0; });
+    const max = Math.max(...G.seats.map((s) => s.fp));
+    G.winners = max > 0 ? G.seats.map((s, i) => (s.fp === max ? i : -1)).filter((i) => i >= 0) : [];
+    seaLevel(0.25); render(); send(); const hud = $('#hud'); if (hud) hud.hidden = true; playEnding();
+  }
+  function backToLobby() {
+    G.ph = 'lobby'; G.li = -1; G.seats = []; G.winners = [];
+    seaLevel(0); buildLobby(); lobbySeats(); render(); if (AC) musicStart();
+  }
+
+  let lastSec = -1, lastSend = 0;
+  setInterval(() => {
+    const t = now();
+    if (G.ph === 'travel' && t >= G.end) openWindow();
+    else if (G.ph === 'win') {
+      G.seats.forEach((s, i) => { if (s.k === 'b' && s.bot.at && !s.dv && t >= s.bot.at) { s.bot.at = 0; dive(i); } });
+      const sec = Math.ceil((G.end - t) / 1000);
+      if (sec !== lastSec && sec >= 0) { lastSec = sec; SFX.tick(sec <= 5); }
+      if (t >= G.end) closeWindow();
+    } else if (G.ph === 'after' && t >= G.end) { if (G.li + 1 < N_LOC) travel(G.li + 1); else finish(); }
+    if (t - lastSend > 1000) send();
+  }, 100);
+
+  function payload() {
+    return { gid: G.gid, ph: G.ph, li: G.li, rem: Math.max(0, G.end - now()), dur: G.ph === 'win' ? T_WIN : G.ph === 'travel' ? T_TRAVEL : T_AFTER,
+      w: G.winners, seats: G.seats.map((s) => ({ k: s.k, peer: s.peer || null, n: s.n, c: s.c, d: s.d, p: s.p, dv: s.dv, r: s.r, gain: s.gain, dt: s.dt, fp: s.fp })) };
+  }
+  function send() {
+    lastSend = now();
+    if (!room || !canEmit) return;
+    room.emit('st', payload()).catch((e) => { if (e && e.code === 'not_permitted') canEmit = false; });
+  }
+  roomP.then((r) => {
+    if (!r) return; room = r; canEmit = true;
+    r.onPeers((ch) => {
+      if (G.ph === 'lobby') { lobbySeats(); render(); return; }
+      ch.joined.length && send();
+      const key = G.gid + ':' + G.li;
+      G.seats.forEach((s, i) => {
+        if (s.k !== 'p') return;
+        const p = ch.peers.find((x) => x.peer === s.peer);
+        if (p && p.presence && p.presence.dv === key) dive(i);
+      });
+    });
+    r.onConnection(() => { lobbySeats(); render(); });
+  });
+
+  function waveLayer(top, h, fill, amp, z) {
+    let d = `M0 ${amp}`; for (let x = 0; x < 3400; x += 200) d += ` Q${x + 50} 0 ${x + 100} ${amp} T${x + 200} ${amp}`;
+    return `<div class="wave" style="top:${top}px;height:${h}px;z-index:${z}"><svg viewBox="0 0 3400 ${h}" preserveAspectRatio="none"><path d="${d} L3400 ${h} L0 ${h} Z" fill="${fill}"/><path d="${d}" fill="none" stroke="#dff3f5" stroke-width="3" opacity=".45"/></svg></div>`;
+  }
+
+  function buildLobby() {
+    wavesEls = [];
+    const SKY = `<linearGradient id="lsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3a5c"/><stop offset=".5" stop-color="#d9825a"/><stop offset="1" stop-color="#f6c98a"/></linearGradient>
+      <linearGradient id="lsea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a86a4"/><stop offset="1" stop-color="#0f4560"/></linearGradient>
+      <radialGradient id="lsun"><stop offset="0" stop-color="#fff4cf"/><stop offset=".45" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffb35a" stop-opacity="0"/></radialGradient>`;
+    const boats = [[120, 470, '#c8463a'], [430, 455, '#3f7fc4'], [1180, 460, '#4f9a4f'], [1450, 475, '#e3b33a']].map(([x, y, c]) =>
+      `<g transform="translate(${x - 90} ${y - 120}) scale(.4)">${shipBack(c)}${shipFront(c, '')}</g>`).join('');
+    let houses = '';
+    for (let i = 0; i < 9; i++) { const x = i * 190 - 40, h = 90 + (i * 37) % 60; houses += `<rect x="${x}" y="${420 - h}" width="170" height="${h}" fill="#d8b98a"/><rect x="${x}" y="${410 - h}" width="170" height="12" fill="#c4a272"/><rect x="${x + 70}" y="380" width="30" height="40" fill="#5a3219"/>${[0, 1, 2, 3, 4, 5].map((k) => `<rect x="${x + k * 30}" y="${400 - h}" width="16" height="12" fill="#c4a272"/>`).join('')}`; }
+    stage.innerHTML = `<div class="scene" id="lobbyScene"><svg class="bg" viewBox="0 0 1600 900" preserveAspectRatio="none"><defs>${SKY}</defs>
+      <rect width="1600" height="900" fill="url(#lsky)"/><circle cx="1250" cy="330" r="150" fill="url(#lsun)"/>
+      <g opacity=".9">${houses}</g>
+      <rect x="0" y="420" width="1600" height="480" fill="url(#lsea)"/>${boats}
+      ${Array.from({ length: 17 }, (_, i) => `<rect x="${i * 100}" y="690" width="96" height="210" fill="${i % 2 ? '#74462a' : '#6b3f22'}"/><rect x="${i * 100 + 40}" y="660" width="22" height="60" rx="5" fill="#4a2a15"/>`).join('')}
+      <rect x="0" y="686" width="1600" height="8" fill="#3e2414"/></svg>
+      <h1 id="title">أوه يامال</h1>
+      <div id="qrCard"></div><div id="roomCode"></div><div id="lobbyIcons"></div><button class="sbBtn" id="sbOpen" style="position:absolute;left:110px;top:760px" aria-label="الأصوات">🎧</button>
+      <div id="slots"></div>
+      <button id="startBtn" aria-label="ابدأ">▶</button></div>`;
+    if (!ONLINE) { const url = ARTIFACT_URL ? ARTIFACT_URL + '#p' : ''; if (url && window.QR) $('#qrCard').innerHTML = QR.svg(url, '#1d1209', '#fffaf0'); else $('#qrCard').hidden = true; }
+    $('#startBtn').onclick = () => { audioInit(); startGame(); };
+    $('#sbOpen').onclick = (e) => { e.stopPropagation(); soundBoard(); };
+  }
+
+  function buildSea() {
+    let stars = ''; for (let i = 0; i < 70; i++) stars += `<circle cx="${rnd(0, 1600)}" cy="${rnd(0, 230)}" r="${rnd(0.8, 2.4)}" fill="#fff" opacity="${rnd(0.4, 1)}"/>`;
+    stage.innerHTML = `<div class="scene" id="seaScene">
+      ${TOD.map((t, i) => `<div class="sky" data-i="${i}" style="background:linear-gradient(${t.sky[0]}, ${t.sky[1]} 60%, ${t.sky[2]})"></div>`).join('')}
+      <svg id="stars" viewBox="0 0 1600 240">${stars}</svg><div id="glow"></div><div id="sun"></div><div id="moon"></div>
+      <div id="sea"></div>
+      ${waveLayer(232, 40, '#3a86a4', 10, 1)}
+      <div id="dock"></div>
+      <div id="spot"><i></i><i></i><i></i></div>
+      <div id="ships"></div>
+      ${waveLayer(850, 60, '#0f4560', 16, 1000)}
+      <div class="tint" id="tintDark"></div><div class="tint" id="tintWarm"></div>
+      <div id="hud"><div id="buoys">${Array.from({ length: N_LOC }, () => '<i class="buoy"></i>').join('')}</div><div id="timer">${ringSVG(1)}<b></b></div></div></div>`;
+    wavesEls = [...stage.querySelectorAll('.wave')];
+    const shipsEl = $('#ships');
+    G.seats.forEach((s, i) => {
+      const R = RING[i];
+      const el = document.createElement('div'); el.className = 'ship'; el.id = 'ship' + i;
+      el.style.left = (R.x - 230) + 'px'; el.style.top = (R.y - 300) + 'px'; el.style.zIndex = Math.round(R.y);
+      el.style.setProperty('--base', `scale(${R.s})`); el.style.transform = `scale(${R.s})`;
+      el.innerHTML = `<div class="rock" style="animation-delay:${-i * 0.7}s">
+        <div class="flip" style="${R.right ? 'transform:scaleX(-1)' : ''}">
+          <svg class="layer" viewBox="0 0 460 330">${shipBack(s.c)}</svg>
+          ${DIVER_X.map((x, k) => `<div class="dv" data-k="${k}" style="left:${x}px">${diverSVG(s.c)}</div>`).join('')}
+          <svg class="layer" viewBox="0 0 460 330">${shipFront(s.c, '')}</svg>
+        </div>
+        <div class="nameTag">${esc(s.n)}</div>
+        <svg class="layer" viewBox="0 0 460 330" style="pointer-events:none">${WASH}</svg></div>`;
+      shipsEl.appendChild(el);
+    });
+  }
+  function setTime(i) {
+    const t = TOD[i]; if (!t) return;
+    stage.querySelectorAll('.sky').forEach((s) => s.classList.toggle('on', +s.dataset.i === i));
+    const sun = $('#sun'); if (sun) { sun.style.left = t.sun[0] + 'px'; sun.style.top = t.sun[1] + 'px'; sun.style.opacity = t.sun[2]; }
+    $('#moon').style.opacity = t.moon; $('#stars').style.opacity = t.stars; $('#glow').style.opacity = t.glow;
+    $('#tintDark').style.opacity = t.dark; $('#tintWarm').style.opacity = t.warm;
+  }
+
+  let off = 0, lastF = now();
+  (function waves() {
+    const t = now(), dt = (t - lastF) / 1000; lastF = t;
+    const sp = G.ph === 'travel' ? 170 : G.ph === 'lobby' ? 0 : 22; off += sp * dt;
+    wavesEls.forEach((el, i) => { el.style.transform = `translateX(${((off * (i ? 1.6 : 0.7)) % 200) - 200}px)`; });
+    if (G.ph === 'win' || G.ph === 'travel') {
+      const tm = $('#timer'), rem = Math.max(0, G.end - t);
+      if (tm) {
+        if (G.ph === 'win') { setRing(tm, rem / T_WIN); tm.querySelector('b').textContent = Math.ceil(rem / 1000); tm.classList.toggle('hurry', rem < 5000); tm.style.opacity = 1; }
+        else { tm.style.opacity = 0.25; setRing(tm, 1); tm.querySelector('b').textContent = ''; tm.classList.remove('hurry'); }
+      }
+      if (G.ph === 'win' && !under.hidden) { const r = under.querySelector('.ring'); if (r) setRing(r, rem / T_WIN); }
+    }
+    requestAnimationFrame(waves);
+  })();
+
+  // a diver leaps from the deck into the middle of the ring
+  function leap(shipEl, dvEl, c) {
+    const sr = stage.getBoundingClientRect(), s = stage._s || 1, r = dvEl.getBoundingClientRect();
+    const x0 = (r.left - sr.left) / s, y0 = (r.top - sr.top) / s, w = r.width / s, h = r.height / s;
+    const tx = CX + rnd(-50, 50) - w / 2, ty = CY - h * 0.2;
+    const f = document.createElement('div'); f.className = 'flyer'; f.innerHTML = diverSVG(c);
+    Object.assign(f.style, { left: '0px', top: '0px', width: w + 'px', height: h + 'px' });
+    stage.appendChild(f);
+    const midX = (x0 + tx) / 2, midY = Math.min(y0, ty) - 120;
+    f.animate([
+      { transform: `translate(${x0}px, ${y0}px) rotate(0deg)` },
+      { transform: `translate(${midX}px, ${midY}px) rotate(${tx > x0 ? 120 : -120}deg)`, offset: 0.45 },
+      { transform: `translate(${tx}px, ${ty}px) rotate(180deg) scale(.8)`, opacity: 1, offset: 0.92 },
+      { transform: `translate(${tx}px, ${ty + 40}px) rotate(180deg) scale(.6)`, opacity: 0 },
+    ], { duration: 1100, easing: 'cubic-bezier(.3,.1,.5,1)', fill: 'forwards' });
+    setTimeout(() => { splash(tx + w / 2, CY + 6); SFX.plunge(); }, 1000);
+    setTimeout(() => f.remove(), 1150);
+  }
+  function splash(x, y) {
+    const sp = document.createElement('div'); sp.className = 'splash'; sp.style.left = x + 'px'; sp.style.top = y + 'px';
+    sp.innerHTML = '<i></i><i></i>' + Array.from({ length: 10 }, () => `<b style="--x:${rnd(-60, 60)}px;animation-delay:${rnd(0, 0.15)}s"></b>`).join('');
+    stage.appendChild(sp); setTimeout(() => sp.remove(), 2400);
+  }
+
+  function underCtx(seats, me, li, frac) {
+    const meIdx = seats.indexOf(me);
+    return { key: G.gid + ':' + li, kind: me.r, li, myT: me.dt, frac,
+      divers: seats.map((s, i) => ({ id: i, c: s.c, t: s.dt, me: i === meIdx, dv: s.dv })).filter((d) => d.dv) };
+  }
+
+  function render() {
+    if (G.ph === 'lobby') {
+      const slots = $('#slots'); if (!slots) return;
+      let h = '';
+      for (let i = 0; i < 6; i++) { const s = G.seats[i]; h += s ? `<div class="slot">${sailIcon(s.c)}<b>${esc(s.n)}</b></div>` : `<div class="slot empty">${sailIcon('#9aa7ad')}<b>&nbsp;</b></div>`; }
+      slots.innerHTML = h;
+      $('#lobbyIcons').textContent = room ? (room.connected() ? '📶' : '📡') : '';
+      if (ONLINE && room && room.code()) {
+        const url = location.origin + '/play?room=' + room.code(), qc = $('#qrCard');
+        if (qc.dataset.url !== url) { qc.dataset.url = url; qc.innerHTML = QR.svg(url, '#1d1209', '#fffaf0'); }
+        $('#roomCode').textContent = room.code();
+      }
+      $('#localJoin').hidden = false; $('#localBtn').textContent = local ? '✕' : '⚓'; $('#localName').disabled = !!local;
+      $('#localDive').hidden = true; under.hidden = true; U.clear();
+      return;
+    }
+    $('#localJoin').hidden = true;
+    stage.querySelectorAll('.buoy').forEach((b, i) => { b.classList.toggle('done', i < G.li); b.classList.toggle('now', i === G.li && G.ph !== 'end'); });
+    const spot = $('#spot'); if (spot) spot.classList.toggle('open', G.ph === 'win');
+    G.seats.forEach((s, i) => {
+      const el = $('#ship' + i); if (!el) return;
+      const vis = s.d - (s.dv ? 1 : 0);
+      el.querySelectorAll('.dv').forEach((dvEl, k) => {
+        const on = k < vis, was = dvEl.dataset.on !== '0';
+        if (on === was) return;
+        dvEl.dataset.on = on ? '1' : '0';
+        dvEl.classList.remove('climb', 'gone');
+        void dvEl.offsetWidth;
+        if (!on) { if (s.dv && k === vis && G.ph === 'win') leap(el, dvEl, s.c); dvEl.classList.add('gone'); }
+        else dvEl.classList.add('climb');
+      });
+    });
+    const li = G.seats.findIndex((s) => s.k === 'l');
+    const ls = G.seats[li];
+    $('#localDive').hidden = !ls || G.ph === 'end';
+    if (ls) {
+      $('#localDive').innerHTML = diverSVG(ls.c);
+      const can = G.ph === 'win' && !ls.dv && ls.d > 0;
+      $('#localDive').disabled = !can; $('#localDive').classList.toggle('ready', can);
+      if (G.ph === 'win' && ls.dv) { under.hidden = false; U.update(underCtx(G.seats, ls, G.li, (G.end - now()) / T_WIN)); }
+      else if (G.ph === 'after' && ls.r) { under.hidden = false; U.update(Object.assign(underCtx(G.seats, ls, G.li, null), { gain: ls.r === 'p' ? ls.gain : 0 })); }
+      else { under.hidden = true; U.clear(); }
+    }
+  }
+
+  function playEnding() {
+    const dock = $('#dock');
+    dock.innerHTML = `<svg viewBox="0 0 560 900" style="width:100%;height:100%">
+      <rect x="0" y="200" width="300" height="160" fill="#d8b98a"/><rect x="0" y="190" width="300" height="14" fill="#c4a272"/>${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `<rect x="${k * 30}" y="178" width="16" height="14" fill="#c4a272"/>`).join('')}
+      <rect x="120" y="280" width="44" height="80" fill="#5a3219"/><rect x="60" y="230" width="22" height="30" fill="#ffd27a" opacity=".85"/><rect x="200" y="230" width="22" height="30" fill="#ffd27a" opacity=".85"/>
+      <rect x="0" y="360" width="470" height="70" fill="#6b3f22"/><rect x="0" y="352" width="470" height="10" fill="#3e2414"/>
+      ${[40, 140, 240, 340, 440].map((x) => `<rect x="${x}" y="420" width="20" height="480" fill="#4a2a15"/>`).join('')}
+      <g transform="translate(230 210)">${merchantG('#d9a441')}</g><g transform="translate(300 214)">${merchantG('#c9c9c9', '#b07a4f')}</g><g transform="translate(370 210)">${merchantG('#d9a441', '#d9a274')}</g>
+      <rect x="270" y="330" width="120" height="30" rx="4" fill="#8a5a33"/><rect x="276" y="324" width="108" height="10" rx="3" fill="#b07a45"/>
+      <circle cx="450" cy="340" r="9" fill="#ffd27a"/><circle cx="450" cy="340" r="26" fill="#ffd27a" opacity=".25"/>
+    </svg>`;
+    setTimeout(() => dock.classList.add('in'), 600);
+    const TARGETS = [[780, 470], [1150, 520]];
+    G.seats.forEach((s, i) => {
+      const el = $('#ship' + i); if (!el) return;
+      if (G.winners.includes(i)) {
+        const k = G.winners.indexOf(i), [ax, ay] = TARGETS[k % 2], R = RING[i];
+        el.style.zIndex = 1200;
+        setTimeout(() => { el.style.transition = 'transform 4s ease-in-out'; el.style.transform = `translate(${ax - R.x}px, ${ay - R.y}px) scale(.85)`; const f = el.querySelector('.flip'); f.style.transition = 'transform .8s'; f.style.transform = ''; }, 1200);
+      } else {
+        if (!s.sunk) setTimeout(() => { el.classList.add('sink'); }, 400 + i * 200);
+      }
+    });
+    setTimeout(() => SFX.sink(), 500);
+    // the winner reaches the merchants: "Oh ya mal" plays until a new game starts
+    setTimeout(() => { if (G.ph === 'end') { seaLevel(0.08); musicStart(); } }, 4200);
+    setTimeout(() => {
+      G.winners.forEach((i, k) => {
+        const s = G.seats[i], n = Math.min(s.fp, 16), [ax, ay] = TARGETS[k % 2];
+        for (let j = 0; j < n; j++) setTimeout(() => {
+          const p = document.createElement('div'); p.className = 'flyPearl'; p.innerHTML = pearlSVG();
+          p.style.left = (ax + rnd(-30, 30)) + 'px'; p.style.top = (ay - 110 + rnd(-20, 20)) + 'px';
+          stage.appendChild(p);
+          requestAnimationFrame(() => requestAnimationFrame(() => { p.style.left = (300 + rnd(-20, 30)) + 'px'; p.style.top = (330 + rnd(-10, 10)) + 'px'; }));
+          setTimeout(() => { p.style.opacity = 0; SFX.chime(1); }, 1300); setTimeout(() => p.remove(), 1700);
+        }, j * 180);
+      });
+    }, 5600);
+    setTimeout(showResults, 8800);
+  }
+  function showResults() {
+    if (G.ph !== 'end') return;
+    const order = G.seats.map((s, i) => ({ s, i })).sort((a, b) => b.s.fp - a.s.fp);
+    const r = document.createElement('div'); r.id = 'results';
+    r.innerHTML = order.map(({ s, i }) => `<div class="res${G.winners.includes(i) ? ' win' : ''}"><i class="sw" style="background:${s.c}"></i><b>${G.winners.includes(i) ? '👑 ' : ''}${esc(s.n)}</b><span>${s.d > 0 ? '' : '☠️'}${s.fp}${pearlSVG()}</span></div>`).join('');
+    stage.appendChild(r);
+    const a = document.createElement('button'); a.id = 'againBtn'; a.textContent = '↻'; a.setAttribute('aria-label', 'مرة ثانية'); a.onclick = backToLobby; stage.appendChild(a);
+  }
+
+  buildLobby(); lobbySeats(); render();
+}
+
+// ═════════════════════════════ PHONE ═════════════════════════════
+function phone() {
+  const P = $('#phone'); P.hidden = false;
+  P.innerHTML = `<div id="pJoin"><h1>أوه يامال</h1>${ONLINE ? '<div class="row"><input id="pCodeIn" maxlength="4" autocomplete="off" aria-label="كود الغرفة" placeholder="ABCD"></div>' : ''}<div class="row"><input id="pNameIn" maxlength="12" autocomplete="off" aria-label="اسمك" placeholder="✎"><button class="iconBtn" id="pJoinBtn" aria-label="انضم">⚓</button></div><div id="pWait" hidden></div><button class="sbBtn" id="pSb" aria-label="الأصوات">🎧</button></div>
+    <div id="pGame" hidden><div id="pTop"><div id="pBuoys">${Array.from({ length: N_LOC }, () => '<i class="buoy"></i>').join('')}</div><div id="pTimer">${ringSVG(1)}<b></b></div></div>
+      <div id="pShip"></div><div id="pStats"><div id="pDivers"></div><div id="pPearls"></div></div>
+      <button class="diveBtn" id="pDive" aria-label="غوص"></button></div>
+    <div id="pEnd" hidden></div><div id="pUnder" hidden></div><div class="connDot" id="pConn"></div>`;
+  const U = Under($('#pUnder'));
+  let room = null, S = null, myPeer = null, name = '', joined = false, recvAt = 0, endKey = '', shipKey = '', pending = '', pendingAt = 0;
+  try { $('#pNameIn').value = localStorage.getItem('oyName') || ''; } catch {}
+  addEventListener('pointerdown', () => audioInit(), { once: true });
+
+  $('#pJoinBtn').onclick = () => {
+    audioInit();
+    const n = clean($('#pNameIn').value); if (!n) { $('#pNameIn').focus(); return; }
+    if (ONLINE && !room) {
+      const code = ($('#pCodeIn').value || '').trim().toUpperCase();
+      if (code.length !== 4) { $('#pCodeIn').classList.remove('bad'); void $('#pCodeIn').offsetWidth; $('#pCodeIn').classList.add('bad'); return; }
+      $('#pJoinBtn').disabled = true;
+      onlineRoom('player', code).then((r) => {
+        $('#pJoinBtn').disabled = false;
+        if (r.error) { $('#pCodeIn').classList.remove('bad'); void $('#pCodeIn').offsetWidth; $('#pCodeIn').classList.add('bad'); return; }
+        attach(r); $('#pJoinBtn').click();
+      });
+      return;
+    }
+    name = n; joined = true; try { localStorage.setItem('oyName', n); } catch {}
+    SFX.anchor(); buzz([30, 40, 30, 40, 120]);
+    if (room) room.presence({ r: 'p', n }).catch(() => {});
+    render();
+  };
+  $('#pNameIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#pJoinBtn').click(); });
+  $('#pSb').onclick = () => soundBoard();
+  $('#pDive').onclick = () => {
+    const me = mySeat(); if (!me || !S || S.ph !== 'win' || me.dv || me.d <= 0 || !room) return;
+    audioInit(); SFX.plunge(); buzz(40);
+    room.presence({ dv: S.gid + ':' + S.li }).catch(() => {});
+    pending = S.gid + S.li; pendingAt = S.dur - remNow();
+    render();
+  };
+
+  const mySeat = () => (S && myPeer ? S.seats.find((s) => s.peer === myPeer) : null);
+  if (ONLINE) { const c = new URLSearchParams(location.search).get('room'); if (c) $('#pCodeIn').value = c.toUpperCase(); }
+  else roomP.then(attach);
+  function attach(r) {
+    room = r;
+    if (!r) { $('#pConn').textContent = '📡'; return; }
+    const findMe = () => { const m = r.peers().find((p) => p.isMe && p.sameTab); if (m) myPeer = m.peer; };
+    r.onPeers(() => { findMe(); render(); });
+    r.onConnection((c) => { $('#pConn').textContent = c ? '' : '📡'; });
+    r.on('st', (m) => { if (!m || !m.data) return; S = m.data; recvAt = now(); findMe(); render(); });
+    if (joined) r.presence({ r: 'p', n: name }).catch(() => {});
+  }
+
+  function render() {
+    const me = mySeat();
+    const inGame = S && S.ph !== 'lobby' && me;
+    $('#pJoin').hidden = !!inGame;
+    $('#pGame').hidden = !inGame || S.ph === 'end';
+    $('#pEnd').hidden = !(S && S.ph === 'end' && me);
+    if (!inGame) {
+      $('#pNameIn').disabled = joined; $('#pJoinBtn').hidden = joined;
+      const w = $('#pWait');
+      if (joined) { w.hidden = false; w.innerHTML = me ? `<div style="width:min(80vw,360px)">${shipStatic(me.c, me.n, 2)}</div>` : `<div style="font-size:48px">⏳</div>`; }
+      $('#pUnder').hidden = true; U.clear();
+      return;
+    }
+    if (S.ph === 'end') return renderEnd(me);
+    const t = TOD[S.li] || TOD[0];
+    $('#pShip').style.background = `linear-gradient(${t.sky[0]}, ${t.sky[2]} 34%, #2a7699 35%, #0f4560)`;
+    const vis = me.d - (me.dv ? 1 : 0), k = me.c + me.n + vis;
+    if (k !== shipKey) { shipKey = k; $('#pShip').innerHTML = shipStatic(me.c, me.n, vis); $('#pDive').innerHTML = diverSVG(me.c); }
+    if (me.d > 0) $('#pShip').classList.remove('sunk', 'sunk-pending');
+    if (me.d <= 0 && !$('#pShip').classList.contains('sunk-pending') && S.ph !== 'win') { setTimeout(() => { $('#pShip').classList.add('sunk'); SFX.sink(); buzz(400); }, 1600); $('#pShip').classList.add('sunk-pending'); }
+    $('#pDivers').innerHTML = [0, 1].map((i) => `<svg viewBox="0 0 46 100" class="${i < me.d ? '' : 'lost'}">${diverG(me.c)}</svg>`).join('');
+    $('#pPearls').innerHTML = `${me.p}${pearlSVG()}`;
+    document.querySelectorAll('#pBuoys .buoy').forEach((b, i) => { b.classList.toggle('done', i < S.li); b.classList.toggle('now', i === S.li); });
+    const key = S.gid + S.li, waiting = S.ph === 'win' && pending === key && !me.dv;
+    const can = S.ph === 'win' && !me.dv && me.d > 0 && !waiting;
+    $('#pDive').disabled = !can; $('#pDive').classList.toggle('ready', can);
+    const myIdx = S.seats.indexOf(me);
+    const divers = S.seats.map((s, i) => ({ id: i, c: s.c, t: s.dt, me: i === myIdx, dv: s.dv })).filter((d) => d.dv);
+    const base = { key: S.gid + ':' + S.li, li: S.li, kind: me.r, myT: me.dt, divers, frac: remNow() / S.dur };
+    if (S.ph === 'win' && me.dv) { $('#pUnder').hidden = false; U.update(base); }
+    else if (waiting) { $('#pUnder').hidden = false; U.update(Object.assign(base, { kind: null, myT: pendingAt, divers: [{ id: myIdx, c: me.c, t: pendingAt, me: true }] })); }
+    else if (S.ph === 'after' && me.r) { $('#pUnder').hidden = false; U.update(Object.assign(base, { frac: null, gain: me.r === 'p' ? me.gain : 0 })); }
+    else { $('#pUnder').hidden = true; U.clear(); }
+  }
+  const remNow = () => (S ? Math.max(0, S.rem - (now() - recvAt)) : 0);
+  (function loop() {
+    if (S && (S.ph === 'win' || S.ph === 'travel')) {
+      const rem = remNow(), tm = $('#pTimer');
+      if (S.ph === 'win') { setRing(tm, rem / S.dur); tm.querySelector('b').textContent = Math.ceil(rem / 1000); tm.style.opacity = 1; }
+      else { setRing(tm, 1); tm.querySelector('b').textContent = ''; tm.style.opacity = 0.3; }
+      const ring = $('#pUnder .ring'); if (ring && !ring.hidden) setRing(ring, rem / S.dur);
+    }
+    requestAnimationFrame(loop);
+  })();
+
+  function renderEnd(me) {
+    const k = S.gid + 'end'; if (endKey === k) return; endKey = k;
+    $('#pUnder').hidden = true; U.clear();
+    const won = S.w.includes(S.seats.indexOf(me));
+    const order = S.seats.map((s, i) => ({ s, i })).sort((a, b) => b.s.fp - a.s.fp);
+    $('#pEnd').innerHTML = `<div class="scene2">
+        ${won ? `<svg viewBox="0 0 400 300" style="position:absolute;inset:0;width:100%;height:100%"><rect x="0" y="118" width="150" height="26" fill="#6b3f22"/>${[20, 70, 120].map((x) => `<rect x="${x}" y="140" width="10" height="160" fill="#4a2a15"/>`).join('')}
+          <g transform="translate(36 30) scale(.62)">${merchantG('#d9a441')}</g><g transform="translate(82 32) scale(.62)">${merchantG('#c9c9c9', '#b07a4f')}</g></svg>` : ''}
+        <div id="pEndShip" style="position:absolute;left:${won ? '30%' : '15%'};top:22%;width:70%;transition:transform 4s ease-in, opacity 1.5s 3s">${shipStatic(me.c, me.n, me.d)}</div></div>
+      <div class="resList">${order.map(({ s, i }) => `<div class="res${S.w.includes(i) ? ' win' : ''}"><i class="sw" style="background:${s.c}"></i><b>${S.w.includes(i) ? '👑 ' : ''}${esc(s.n)}</b><span>${s.d > 0 ? '' : '☠️'}${s.fp}${pearlSVG()}</span></div>`).join('')}</div>`;
+    const sh = $('#pEndShip');
+    setTimeout(() => {
+      if (won) { sh.style.transform = 'translateX(-16%)'; SFX.chime(6); buzz([80, 60, 80, 60, 200]); }
+      else { sh.style.transform = 'translateY(70%) rotate(14deg)'; sh.style.opacity = 0; SFX.sink(); buzz(400); }
+    }, 600);
+  }
+  render();
+}
+
+if (IS_PHONE) phone(); else host();
+})();
+</script>
+
+</body>
+</html>
