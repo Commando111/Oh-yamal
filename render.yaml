@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: oh-yamal
+    runtime: node
+    plan: free
+    buildCommand: "echo no build needed"
+    startCommand: node server.js
+    healthCheckPath: /healthz
